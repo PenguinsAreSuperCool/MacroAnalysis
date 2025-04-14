@@ -1,0 +1,22 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    {{ country }}
+{% endblock %}
+{% block main %}
+    <table>
+        <tr>
+            <th>Country</th>
+            <th>GDP</th>
+            <th>Inflation</th>
+            <th>Unemployment</th>
+        </tr>
+        <tr>
+            <td>{{ country }}</td>
+            <td>{{ gdp }}</td>
+            <td>{{ inflation }}</td>
+            <td>{{ unemployment }}</td>
+        </tr>
+    </table>
+   
+{% endblock %}

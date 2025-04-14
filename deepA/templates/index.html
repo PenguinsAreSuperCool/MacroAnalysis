@@ -1,0 +1,39 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Map
+{% endblock %}
+{% block main %}
+
+    <div class="text-center">
+    <h1>Economist's Toolkit</h1>
+    </div>
+    <div id="map"></div>
+    <form id="country-form" action="/country" method="post">
+        <input type="hidden" name="country" id="country-input">
+    </form>
+
+    <script>
+    // Initialize the map
+    const map = L.map('map').setView([20, 0], 2); // center of world
+
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+    map.on('click', function(e) {
+        const { lat, lng } = e.latlng;
+      
+        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+          .then(res => res.json())
+          .then(data => {
+            const country = data.address.country;
+            console.log("Clicked country:", country);
+      
+            // Fill form and submit
+            document.getElementById('country-input').value = country;
+            document.getElementById('country-form').submit();
+          });
+      });
+    </script>
+{% endblock %}
