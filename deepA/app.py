@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect
 import requests
+from datetime import datetime
 
 app = Flask(__name__)
 
@@ -19,35 +20,53 @@ def get_country_code(country):
     }
     return country_codes[country]
 
-def get_gdp(country_code):
-    url = f"https://api.worldbank.org/v2/country/{country_code}/indicator/NY.GDP.MKTP.CD?format=json&per_page=1"
-    headers = {
-        "User-Agent": "DeepA lupchinskileonardo@gmail.com"
-    }
-    response = requests.get(url, headers=headers)
-    response = response.json()
-    gdp = response[1][0]["value"]
-    return gdp
+def get_gdp(country_code, year):
+    try:
+        url = f"https://api.worldbank.org/v2/country/{country_code}/indicator/NY.GDP.MKTP.CD?format=json&per_page=1&date={year}"
+        headers = {
+            "User-Agent": "DeepA lupchinskileonardo@gmail.com"
+        }
+        response = requests.get(url, headers=headers)
+        response = response.json()
+        gdp = response[1][0]["value"]
+        if gdp is None:
+            return get_gdp(country_code, year - 1)
+        return gdp
+    except TypeError:
+        # handling TypeErrors recursively. Are you proud Yuliia??
+        return get_gdp(country_code, year - 1)
 
-def get_inflation(country_code):
-    url = f"https://api.worldbank.org/v2/country/{country_code}/indicator/FP.CPI.TOTL.ZG?format=json&per_page=1"
-    headers = {
-        "User-Agent": "DeepA lupchinskileonardo@gmail.com"
-    }
-    response = requests.get(url, headers=headers)
-    response = response.json()
-    inflation = response[1][0]["value"]
-    return inflation
+def get_inflation(country_code, year):
+    try:
+        url = f"https://api.worldbank.org/v2/country/{country_code}/indicator/FP.CPI.TOTL.ZG?format=json&per_page=1&date={year}"
+        headers = {
+            "User-Agent": "DeepA lupchinskileonardo@gmail.com"
+        }
+        response = requests.get(url, headers=headers)
+        response = response.json()
+        inflation = response[1][0]["value"]
+        if inflation is None:
+            return get_inflation(country_code, year - 1)
+        return inflation
+    except TypeError:
+        # handling TypeErrors recursively again.
+        return get_inflation(country_code, year - 1)
 
-def get_unemployment(country_code):
-    url = f"https://api.worldbank.org/v2/country/{country_code}/indicator/SL.UEM.TOTL.ZS?format=json&per_page=1"
-    headers = {
-        "User-Agent": "DeepA lupchinskileonardo@gmail.com"
-    }
-    response = requests.get(url, headers=headers)
-    response = response.json()
-    unemployment = response[1][0]["value"]
-    return unemployment
+def get_gdp_per_capita(country_code, year):
+    try:
+        url = f"https://api.worldbank.org/v2/country/{country_code}/indicator/NY.GDP.PCAP.CD?format=json&per_page=1&date={year}"
+        headers = {
+            "User-Agent": "DeepA lupchinskileonardo@gmail.com"
+        }
+        response = requests.get(url, headers=headers)
+        response = response.json()
+        gdp_per_capita = response[1][0]["value"]
+        if gdp_per_capita is None:
+            return get_gdp_per_capita(country_code, year - 1)
+        return gdp_per_capita
+    except TypeError:
+        # handling TypeErrors recursively and again.
+        return get_gdp_per_capita(country_code, year - 1)
     
 
 
@@ -58,10 +77,11 @@ def country():
         if not country:
             return redirect("/")
         country_code = get_country_code(country)
-        gdp = get_gdp(country_code)
-        inflation = get_inflation(country_code)
-        unemployment = get_unemployment(country_code)
-        return render_template("country.html", gdp=gdp, country=country, inflation=inflation, unemployment=unemployment)
+        year = datetime.now().year
+        gdp = get_gdp(country_code, year)
+        inflation = get_inflation(country_code, year)
+        gdp_per_capita = get_gdp_per_capita(country_code, year)
+        return render_template("country.html", gdp=gdp, country=country, inflation=inflation, gdp_per_capita=gdp_per_capita)
     else:
         redirect("/")
 

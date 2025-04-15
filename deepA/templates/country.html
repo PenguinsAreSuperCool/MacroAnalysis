@@ -4,19 +4,38 @@
     {{ country }}
 {% endblock %}
 {% block main %}
-    <table>
-        <tr>
-            <th>Country</th>
-            <th>GDP</th>
-            <th>Inflation</th>
-            <th>Unemployment</th>
-        </tr>
-        <tr>
-            <td>{{ country }}</td>
-            <td>{{ gdp }}</td>
-            <td>{{ inflation }}</td>
-            <td>{{ unemployment }}</td>
-        </tr>
-    </table>
+<!-- Load Plotly -->
+<script src="https://cdn.plot.ly/plotly-3.0.1.min.js"></script>
+
+<!-- Container for the graph -->
+<div id="graph_GDP" style="width:100%;max-width:700px;height:400px;margin:auto;"></div>
+<div id="graph_Inflation" style="width:100%;max-width:700px;height:400px;margin:auto;"></div>
+<div id="graph_GDP_per_Capita" style="width:100%;max-width:700px;height:400px;margin:auto;"></div>
+
+<script>
+    const layout = {
+        title: 'Key Economic Indicators for {{ country }}',
+        yaxis: { title: 'Value' }
+    };
+    const data_gdp = [{
+        type: 'bar',
+        x: ['GDP'],
+        y: [{{ gdp }}],
+        marker: { color: ['green'] }}];
+    const data_Inflation = [{
+        type: 'bar',
+        x: ['Inflation'],
+        y: [{{ inflation }}],
+        marker: { color: ['red'] }}];
+    const data_GDP_per_Capita = [{
+        type: 'bar',
+        x: ['GDP per Capita'],
+        y: [{{ gdp_per_capita}}],
+        marker: { color: ['purple'] }}];
+
+    Plotly.newPlot('graph_GDP', data_gdp, layout);
+    Plotly.newPlot('graph_Inflation', data_Inflation, layout);
+    Plotly.newPlot('graph_GDP_per_Capita', data_GDP_per_Capita, layout);
+</script>
    
 {% endblock %}
