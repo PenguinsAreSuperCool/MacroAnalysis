@@ -8,32 +8,80 @@
     <div class="text-center">
     <h1>Economist's Toolkit</h1>
     </div>
+    <div class="text-center">
+        <form id="country_form" action="/country" method="post" class="text-center">
+            <input type="hidden" name="country" id="country">
+            <label for="start_year">Start Year:</label>
+            <input type="number" id="start_year" name="start_year" value="2000">
+            <label for="end_year">End Year:</label>
+            <input type="number" id="end_year" name="end_year" value="2023">
+            <details style="color: white; margin-top: 10px;">
+                <summary>Select data to display:</summary>
+                <div style="display: grid; grid-template-columns: repeat(3, auto); gap: 8px; margin-top: 10px;">
+                    {% for indicator in valid_indicators %}
+                        <label>
+                            <input type="checkbox" name="indicators" value="{{ indicator }}">
+                            {{ indicator.replace('_', ' ').title() }}
+                        </label>
+                    {% endfor %}
+                </div>
+            </details>
+        </form>
+    </div>
     <div id="map"></div>
-    <form id="country-form" action="/country" method="post">
-        <input type="hidden" name="country" id="country-input">
-    </form>
+
+    <div id="confirm-box" style="display:none; position:fixed; 
+         background-color:#222; padding:20px; border-radius:8px; color:white; box-shadow:0 0 10px rgba(0,0,0,0.5); z-index:1000;">
+        <p id="confirm-text">Do you want to view data for this country?</p>
+        <button id="confirm-yes" style="margin-right: 10px;">Yes</button>
+        <button id="confirm-no">No</button>
+    </div>
 
     <script>
     // Initialize the map
-    const map = L.map('map').setView([20, 0], 2); // center of world
+    const map = L.map('map').setView([20, 0], 3); // center of the world
 
     // Add OpenStreetMap tiles
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
         attribution: '© OpenStreetMap contributors'
     }).addTo(map);
+    
+    let selectedCountry = "";
+
     map.on('click', function(e) {
         const { lat, lng } = e.latlng;
-      
+
         fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
-          .then(res => res.json())
-          .then(data => {
-            const country = data.address.country;
-            console.log("Clicked country:", country);
-      
-            // Fill form and submit
-            document.getElementById('country-input').value = country;
-            document.getElementById('country-form').submit();
-          });
-      });
+            .then(res => res.json())
+            .then(data => {
+                selectedCountry = data.address.country;
+                const countryCode = data.address.country_code.toUpperCase();
+                document.getElementById('country').value = countryCode;
+                document.getElementById('confirm-text').textContent = `Do you want to view data for ${selectedCountry}?`;
+                const mapPoint = map.latLngToContainerPoint(e.latlng);
+                const box = document.getElementById('confirm-box');
+                box.style.left = `${mapPoint.x}px`;
+                box.style.top = `${mapPoint.y}px`;
+                box.style.display = 'block';
+            });
+    });
+
+    document.getElementById('confirm-yes').onclick = function() {
+        document.getElementById('country_form').submit();
+    };
+
+    document.getElementById('confirm-no').onclick = function() {
+        document.getElementById('confirm-box').style.display = 'none';
+    };
+
+    document.querySelectorAll('input[type="checkbox"][name="indicators"]').forEach(cb => {
+        cb.addEventListener('change', () => {
+            const checked = document.querySelectorAll('input[type="checkbox"][name="indicators"]:checked');
+            if (checked.length > 10) {
+                cb.checked = false;
+                alert("You can only select up to 10 indicators.");
+            }
+        });
+    });
     </script>
 {% endblock %}

@@ -7,35 +7,31 @@
 <!-- Load Plotly -->
 <script src="https://cdn.plot.ly/plotly-3.0.1.min.js"></script>
 
-<!-- Container for the graph -->
-<div id="graph_GDP" style="width:100%;max-width:700px;height:400px;margin:auto;"></div>
-<div id="graph_Inflation" style="width:100%;max-width:700px;height:400px;margin:auto;"></div>
-<div id="graph_GDP_per_Capita" style="width:100%;max-width:700px;height:400px;margin:auto;"></div>
+{% for indicator in indicators %}
+    <div id="graph_{{ indicator }}" style="width:100%;max-width:700px;height:400px;margin:auto;"></div>
+{% endfor %}
 
 <script>
-    const layout = {
-        title: 'Key Economic Indicators for {{ country }}',
-        yaxis: { title: 'Value' }
-    };
-    const data_gdp = [{
-        type: 'bar',
-        x: ['GDP'],
-        y: [{{ gdp }}],
-        marker: { color: ['green'] }}];
-    const data_Inflation = [{
-        type: 'bar',
-        x: ['Inflation'],
-        y: [{{ inflation }}],
-        marker: { color: ['red'] }}];
-    const data_GDP_per_Capita = [{
-        type: 'bar',
-        x: ['GDP per Capita'],
-        y: [{{ gdp_per_capita}}],
-        marker: { color: ['purple'] }}];
+    const years = {{ years | list }};
 
-    Plotly.newPlot('graph_GDP', data_gdp, layout);
-    Plotly.newPlot('graph_Inflation', data_Inflation, layout);
-    Plotly.newPlot('graph_GDP_per_Capita', data_GDP_per_Capita, layout);
+    {% for indicator in indicators %}
+        const {{ indicator }}_values = {{ data_series[indicator] | map(attribute='value') | list | tojson }};
+        const layout_{{ indicator }} = {
+            title: { text: '{{ indicator.replace("_", " ").title() }} of {{ country }}', font: { color: 'white' } },
+            xaxis: { title: 'Year', color: 'white' },
+            yaxis: { title: 'Value', color: 'white' },
+            paper_bgcolor: 'black',
+            plot_bgcolor: 'black'
+        };
+
+        Plotly.newPlot('graph_{{ indicator }}', [{
+            type: 'scatter',
+            mode: 'lines+markers',
+            x: years,
+            y: {{ indicator }}_values,
+            name: '{{ indicator.title() }}'
+        }], layout_{{ indicator }});
+    {% endfor %}
 </script>
    
 {% endblock %}
