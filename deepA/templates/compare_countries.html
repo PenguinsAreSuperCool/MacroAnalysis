@@ -6,7 +6,7 @@
 {% block main %}
 <div class="compare-countries-container">
     <h1 class="text-center">MacroAnalysis</h1>
-    <div class="graph-grid" style="display: flex; flex-wrap: wrap; flex-direction: column; gap: 1em;">
+    <div class="graph-grid">
         {% for indicator in indicators %}
             <div id="resizable_{{ indicator }}" class="graph-resizable" draggable="true" ondragstart="dragStart(event)" ondragover="allowDrop(event)" ondrop="drop(event)">
                 <div id="graph_{{ indicator }}" class="graph-box"></div>

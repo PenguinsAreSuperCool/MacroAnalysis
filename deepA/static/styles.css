@@ -36,6 +36,11 @@ form {
     z-index: -1;
     object-fit: cover;
 }
+#country_search {
+    width: 60%; 
+    padding: 0.4em; 
+    border-radius: 5px;
+}
 
 .home-container {
     text-align: center;
@@ -173,3 +178,4 @@ blockquote {
         width: 95vw;
     }
 }
+
