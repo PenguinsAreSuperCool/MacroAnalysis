@@ -4,6 +4,7 @@ from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
 
 app = Flask(__name__)
+# Codes for the World Bank API. It's made in a way new ones can be added anytime.
 codes = {
         "gdp": "NY.GDP.MKTP.CD",
         "inflation": "FP.CPI.TOTL.ZG",
@@ -83,17 +84,19 @@ def country():
         start_year = request.form.get("start_year")
         end_year = request.form.get("end_year")
         indicators = request.form.getlist("indicators")
+
         # handling misinputs
         if not country or not start_year or not end_year:
             return redirect("/")
-        print(f"Looking for country code: input='{country}'")
         if not start_year.isdigit() or not end_year.isdigit():
-            print("The issue was year")
             return redirect("/")
         if not indicators:
             indicators = ["gdp", "gdp_per_capita", "gdp_growth", "inflation", "unemployment"]
+
+
         start_year = int(start_year)
         end_year = int(end_year)
+
         if ((start_year) > (end_year)) or ((start_year) < 1960) or ((end_year) > datetime.now().year - 2):
             return redirect("/")
         country_code = country.upper()
@@ -132,6 +135,7 @@ def compare():
 def compare_countries():
     if request.method == "POST":
         countries = []
+        # why not make range be inclusive? Would be so awesome
         for i in range(1, 11):
             code = request.form.get(f"country{i}")
             if code:
@@ -150,6 +154,7 @@ def compare_countries():
 
         start_year = int(start_year)
         end_year = int(end_year)
+        
         if start_year > end_year or start_year < 1960 or end_year > datetime.now().year - 2:
             return redirect("/compare")
 
