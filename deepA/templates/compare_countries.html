@@ -6,7 +6,7 @@
 {% block main %}
 <div class="compare-countries-container">
     <h1 class="text-center">MacroAnalysis</h1>
-    <div class="graph-grid" style="display: flex; flex-wrap: wrap; gap: 1em;">
+    <div class="graph-grid" style="display: flex; flex-wrap: wrap; flex-direction: column; gap: 1em;">
         {% for indicator in indicators %}
             <div id="resizable_{{ indicator }}" class="graph-resizable" draggable="true" ondragstart="dragStart(event)" ondragover="allowDrop(event)" ondrop="drop(event)">
                 <div id="graph_{{ indicator }}" class="graph-box"></div>
@@ -14,7 +14,7 @@
         {% endfor %}
     </div>
     <div class="text-center" style="margin-top: 1.5em;">
-        <button onclick="resetGraphSizes()" class="btn btn-secondary">Reset Graph Sizes</button>
+        <button id="toggle-layout" class="btn btn-secondary">Switch to Grid View</button>
         <a href="/compare" class="btn btn-primary">Compare other Countries</a>
         <a href="/map" class="btn btn-primary">Back to Map</a>
         <a href="/" class="btn btn-primary">Home</a>
@@ -92,6 +92,24 @@
             parent.insertBefore(draggedEl, dropTarget);
         }
     }
+
+    document.getElementById('toggle-layout').addEventListener('click', function () {
+        const grid = document.querySelector('.graph-grid');
+        const resizables = document.querySelectorAll('.graph-resizable');
+        if (grid.style.flexDirection === 'column') {
+            grid.style.flexDirection = '';
+            resizables.forEach(el => {
+                el.style.width = '48%';
+            });
+            this.textContent = 'Switch to List View';
+        } else {
+            grid.style.flexDirection = 'column';
+            resizables.forEach(el => {
+                el.style.width = '100%';
+            });
+            this.textContent = 'Switch to Grid View';
+        }
+    });
 </script>
    
 {% endblock %}
