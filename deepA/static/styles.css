@@ -3,8 +3,14 @@
     width: 100%;
     border: 2px solid #333;
     margin-top: 10px;
+    max-width: 100%;
 }
 h1 {
+    color: white;
+    font-size: 2.5em;
+    text-align: center;
+}
+h2 {
     color: white;
 }
 body {
@@ -17,4 +23,149 @@ label {
 }
 form {
     color: white;
+}
+#bg-video {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    min-width: 100%;
+    min-height: 100%;
+    width: auto;
+    height: auto;
+    transform: translate(-50%, -50%);
+    z-index: -1;
+    object-fit: cover;
+}
+
+.home-container {
+    text-align: center;
+    padding-top: 15vh;
+}
+
+.home-title {
+    font-size: 3em;
+    margin-bottom: 0.5em;
+}
+
+.home-subtitle {
+    font-size: 1.5em;
+    margin-bottom: 2em;
+}
+
+.home-button {
+    display: block;
+    width: 250px;
+    margin: 1em auto;
+    padding: 1em;
+    font-size: 1em;
+    color: white;
+    background-color: black;
+    border: 1px solid white;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: 0.3s;
+}
+
+.home-button:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+.about_text {
+    max-width: 800px; 
+    margin: 3em auto; 
+    padding: 2em; 
+    color: white; 
+    text-align: center; 
+    font-size: 1.1em; 
+    line-height: 1.6em; 
+    animation: fadeIn 1.2s ease;
+}
+p {
+    color: white;
+}
+ul {
+    color: white;
+    list-style-position: inside; 
+    padding: 0;
+}
+blockquote {
+    font-style: italic; 
+    margin: 2em auto; 
+    max-width: 600px;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.graph-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1em;
+    margin: 2em auto;
+    padding: 1em;
+    max-width: 1400px;
+}
+.graph-box {
+    height: 400px;
+}
+.graph-resizable {
+    resize: both;
+    overflow: auto;
+    min-width: 300px;
+    min-height: 300px;
+    height: 400px;
+    width: 48%;
+    max-width: 100%;
+    padding: 0.5em;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-sizing: border-box;
+    background-color: rgba(255, 255, 255, 0.02);
+    cursor: move;
+    flex-grow: 1;
+}
+@media (max-width: 600px) {
+    .indicator-grid {
+      grid-template-columns: 1fr !important;
+    }
+}
+
+.map-container {
+    margin: auto;
+    padding: 1em;
+    width: 100%;
+}
+
+
+.indicator-grid {
+    display: grid;
+    grid-template-columns: repeat(3, auto);
+    gap: 8px;
+    margin-top: 10px;
+}
+
+@media (max-width: 600px) {
+    .indicator-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .graph-resizable {
+        width: 100% !important;
+        min-width: 0;
+    }
+
+    .home-title {
+        font-size: 1.8em;
+    }
+
+    .home-subtitle {
+        font-size: 1.2em;
+    }
+
+    .home-button {
+        width: 90%;
+        font-size: 0.95em;
+    }
+    .compare-container {
+        width: 95vw;
+    }
 }

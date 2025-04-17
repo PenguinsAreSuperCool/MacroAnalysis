@@ -12,27 +12,15 @@ codes = {
         "unemployment": "SL.UEM.TOTL.ZS",
         "literacy_rate": "SE.ADT.LITR.ZS",
         "life_expectancy": "SP.DYN.LE00.IN",
-        "population": "SP.POP.TOTL",
         "population_growth": "SP.POP.GROW",
         "poverty_rate": "SI.POV.DDAY",
         "gini_index": "SI.POV.GINI",
-        "hdi": "SP.POP.TOTL",
-        "happiness_index": "SP.POP.TOTL",
-        "corruption_index": "SP.POP.TOTL",
-        "environmental_quality": "SP.POP.TOTL",
+        "Total_population": "SP.POP.TOTL",
         "internet_usage": "IT.NET.USER.ZS",
         "energy_consumption": "EG.USE.PCAP.KG.OE",
         "electricity_access": "EG.ELC.ACCS.ZS",
         "renewable_energy": "EG.FEC.RNEW.ZS",
         "carbon_emissions": "EN.ATM.CO2E.KT",
-        "water_quality": "SP.POP.TOTL",
-        "air_quality": "SP.POP.TOTL",
-        "biodiversity": "SP.POP.TOTL",
-        "waste_management": "SP.POP.TOTL",
-        "transportation": "SP.POP.TOTL",
-        "education": "SP.POP.TOTL",
-        "healthcare": "SP.POP.TOTL",
-        "infrastructure": "SP.POP.TOTL",
         "tourism": "ST.INT.ARVL",
         "foreign_investment": "BX.KLT.DINV.CD",
         "trade_balance": "NE.RSB.GNFS.CD",
@@ -43,6 +31,10 @@ codes = {
     }
 
 @app.route("/")
+def home():
+    return render_template("home.html")
+
+@app.route("/map")
 def index():
     return render_template("index.html", valid_indicators=codes.keys())
 
@@ -53,7 +45,7 @@ def get_data(data_to_get, country_code, years):
         end = max(years)
         url = f"https://api.worldbank.org/v2/country/{country_code}/indicator/{data_indicator}?format=json&per_page=100&date={start}:{end}"
         headers = {
-            "User-Agent": "DeepA lupchinskileonardo@gmail.com"
+            "User-Agent": "MacroAnalysis lupchinskileonardo@gmail.com"
         }
         response = requests.get(url, headers=headers).json()
         values = {}
@@ -74,15 +66,14 @@ def country():
         end_year = request.form.get("end_year")
         indicators = request.form.getlist("indicators")
         # handling misinputs
-        if not country or not start_year or not end_year or not indicators:
+        if not country or not start_year or not end_year:
             return redirect("/")
         print(f"Looking for country code: input='{country}'")
         if not start_year.isdigit() or not end_year.isdigit():
-            print("The issues was year")
+            print("The issue was year")
             return redirect("/")
-        if len(indicators) > 10:
-            print("The issues was indicator")
-            return redirect("/")
+        if not indicators:
+            indicators = ["gdp", "gdp_per_capita", "gdp_growth", "inflation", "unemployment"]
         start_year = int(start_year)
         end_year = int(end_year)
         if ((start_year) > (end_year)) or ((start_year) < 1960) or ((end_year) > datetime.now().year - 2):
@@ -93,7 +84,7 @@ def country():
         # insteresting solution to make this viable
         # when not using ThreadPoolExecutor, the code took ages to run!
         # API calls are made in parallel now, which makes it much faster!
-        # limiting the indicators and years is still necessary, though.
+
         with ThreadPoolExecutor() as executor:
             futures = {executor.submit(get_data, indicator, country_code, years): indicator for indicator in indicators}
 
@@ -111,5 +102,59 @@ def country():
     else:
         return redirect("/")
 
+@app.route("/about")
+def about():
+    return render_template("about.html")
+
+@app.route("/compare")
+def compare():
+    return render_template("compare.html", valid_indicators=codes.keys())
+
+@app.route("/compare/country", methods=["GET", "POST"])
+def compare_countries():
+    if request.method == "POST":
+        countries = []
+        for i in range(1, 11):
+            code = request.form.get(f"country{i}")
+            if code:
+                countries.append(code.upper())
+
+        start_year = request.form.get("start_year")
+        end_year = request.form.get("end_year")
+        indicators = request.form.getlist("indicators")
+
+        if not countries or not start_year or not end_year:
+            return redirect("/compare")
+        if not start_year.isdigit() or not end_year.isdigit():
+            return redirect("/compare")
+        if not indicators:
+            indicators = ["gdp", "gdp_per_capita", "gdp_growth", "inflation", "unemployment"]
+
+        start_year = int(start_year)
+        end_year = int(end_year)
+        if start_year > end_year or start_year < 1960 or end_year > datetime.now().year - 2:
+            return redirect("/compare")
+
+        years = list(range(start_year, end_year + 1))
+
+        with ThreadPoolExecutor() as executor:
+            futures = {}
+            for country_code in countries:
+                for indicator in indicators:
+                    futures[executor.submit(get_data, indicator, country_code, years)] = (country_code, indicator)
+
+            data_series = {country: {indicator: [] for indicator in indicators} for country in countries}
+            for future in futures:
+                country_code, indicator = futures[future]
+                values = future.result()
+                for year in years:
+                    data_series[country_code][indicator].append({
+                        "year": year,
+                        "value": values.get(year)
+                    })
+
+        return render_template("compare_countries.html", countries=countries, indicators=indicators, data_series=data_series, years=years)
+    else:
+        return redirect("/compare")
 
 app.run(debug=True)

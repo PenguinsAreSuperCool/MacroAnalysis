@@ -1,0 +1,120 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Compare
+{% endblock %}
+{% block main %}
+
+    <div class="map-container">
+        <div class="text-center">
+            <h1>MacroAnalysis</h1>
+        </div>
+        <div class="text-center">
+            <form id="country_form" action="/compare/country" method="post" class="text-center">
+                <input type="hidden" name="country1" id="country1">
+                <input type="hidden" name="country2" id="country2">
+                <input type="hidden" name="country3" id="country3">
+                <input type="hidden" name="country4" id="country4">
+                <input type="hidden" name="country5" id="country5">
+                <input type="hidden" name="country6" id="country6">
+                <input type="hidden" name="country7" id="country7">
+                <input type="hidden" name="country8" id="country8">
+                <input type="hidden" name="country9" id="country9">
+                <input type="hidden" name="country10" id="country10">
+                <label for="start_year">Start Year:</label>
+                <input type="number" id="start_year" name="start_year" value="1960">
+                <label for="end_year">End Year:</label>
+                <input type="number" id="end_year" name="end_year" value="2023">
+                <details style="color: white; margin-top: 10px;">
+                    <summary>Select data to display:</summary>
+                    <div class="indicator-grid">
+                        {% for indicator in valid_indicators %}
+                            <label>
+                                <input type="checkbox" name="indicators" value="{{ indicator }}">
+                                {{ indicator.replace('_', ' ').title() }}
+                            </label>
+                        {% endfor %}
+                    </div>
+                </details>
+                <div style="margin-top: 10px;">
+                    <button type="submit" class="btn btn-primary">Compare Countries</button>
+                </div>
+            </form>
+        </div>
+        <div id="selected-countries" style="margin: 20px auto; max-width: 600px; text-align: center;"></div>
+        <div id="map" class="compare-map"></div>
+
+        <div id="confirm-box" style="display:none; position:fixed; 
+            background-color:#222; padding:20px; border-radius:8px; color:white; box-shadow:0 0 10px rgba(0,0,0,0.5); z-index:1000;">
+            <p id="confirm-text">Do you want to view data for this country?</p>
+            <button id="confirm-yes" style="margin-right: 10px;">Yes</button>
+            <button id="confirm-no">No</button>
+        </div>
+        <div class="text-center">
+            <a href="/map" class="btn btn-primary">Back to Map</a>
+            <a href="/" class="btn btn-primary">Home</a>
+        </div>
+    </div>
+
+    <script>
+    // Initialize the map
+    const map = L.map('map').setView([20, 0], 3); // center of the world
+
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+    
+    let selectedCountry = "";
+
+    map.on('click', function(e) {
+        const { lat, lng } = e.latlng;
+
+        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+            .then(res => res.json())
+            .then(data => {
+                const selectedCountry = data.address.country;
+                const countryCode = data.address.country_code.toUpperCase();
+                const mapPoint = map.latLngToContainerPoint(e.latlng);
+                const box = document.getElementById('confirm-box');
+                document.getElementById('confirm-text').textContent = `Do you want to select ${selectedCountry}?`;
+                box.style.left = `${mapPoint.x}px`;
+                box.style.top = `${mapPoint.y}px`;
+                box.style.display = 'block';
+                box.setAttribute('data-country-code', countryCode);
+                box.setAttribute('data-country-name', selectedCountry);
+            });
+    });
+
+    document.getElementById('confirm-yes').onclick = function() {
+        const box = document.getElementById('confirm-box');
+        const code = box.getAttribute('data-country-code');
+        const name = box.getAttribute('data-country-name');
+
+        const fields = ['country1', 'country2', 'country3', 'country4', 'country5', 'country6', 'country7', 'country8', 'country9', 'country10'];
+        for (let field of fields) {
+            const input = document.getElementById(field);
+            if (!input.value) {
+                input.value = code;
+
+                const btn = document.createElement("button");
+                btn.textContent = name + " ✕";
+                btn.className = "btn btn-sm btn-danger";
+                btn.style.margin = "5px";
+                btn.onclick = function() {
+                    input.value = "";
+                    btn.remove();
+                };
+                document.getElementById("selected-countries").appendChild(btn);
+                break;
+            }
+        }
+
+        box.style.display = 'none';
+    };
+
+    document.getElementById('confirm-no').onclick = function() {
+        document.getElementById('confirm-box').style.display = 'none';
+    };
+    </script>
+{% endblock %}

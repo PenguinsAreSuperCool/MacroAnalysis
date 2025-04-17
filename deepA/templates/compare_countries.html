@@ -1,0 +1,97 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Country Comparison
+{% endblock %}
+{% block main %}
+<div class="compare-countries-container">
+    <h1 class="text-center">MacroAnalysis</h1>
+    <div class="graph-grid" style="display: flex; flex-wrap: wrap; gap: 1em;">
+        {% for indicator in indicators %}
+            <div id="resizable_{{ indicator }}" class="graph-resizable" draggable="true" ondragstart="dragStart(event)" ondragover="allowDrop(event)" ondrop="drop(event)">
+                <div id="graph_{{ indicator }}" class="graph-box"></div>
+            </div>
+        {% endfor %}
+    </div>
+    <div class="text-center" style="margin-top: 1.5em;">
+        <button onclick="resetGraphSizes()" class="btn btn-secondary">Reset Graph Sizes</button>
+        <a href="/compare" class="btn btn-primary">Compare other Countries</a>
+        <a href="/map" class="btn btn-primary">Back to Map</a>
+        <a href="/" class="btn btn-primary">Home</a>
+    </div>
+</div>
+
+<script src="https://cdn.plot.ly/plotly-3.0.1.min.js"></script>
+<script>
+    const countries = {{ countries | tojson }};
+    const dataSeries = {{ data_series | tojson }};
+    const years = {{ years | list }};
+
+    {% for indicator in indicators %}
+        const layout_{{ indicator }} = {
+            title: { text: '{{ indicator.replace("_", " ").title() }} Comparison', font: { color: 'white' } },
+            xaxis: { title: 'Year', color: 'white' },
+            yaxis: { title: 'Value', color: 'white' },
+            paper_bgcolor: 'black',
+            plot_bgcolor: 'black'
+        };
+
+        var traces = countries.map(name => ({
+            type: 'scatter',
+            mode: 'lines+markers',
+            x: years,
+            y: dataSeries[name][{{ indicator | tojson }}].map(d => d.value),
+            name: name
+        }));
+
+        Plotly.newPlot('graph_{{ indicator }}', traces, layout_{{ indicator }});
+    {% endfor %}
+
+    window.addEventListener("resize", () => {
+        {% for indicator in indicators %}
+        Plotly.Plots.resize(document.getElementById('graph_{{ indicator }}'));
+        {% endfor %}
+    });
+
+    function resetGraphSizes() {
+        document.querySelectorAll(".graph-resizable").forEach(el => {
+            el.style.width = "48%";
+            el.style.height = "400px";
+        });
+        {% for indicator in indicators %}
+        Plotly.Plots.resize(document.getElementById('graph_{{ indicator }}'));
+        {% endfor %}
+    }
+    const resizeObserver = new ResizeObserver(entries => {
+        for (let entry of entries) {
+            const graph = entry.target.querySelector('.graph-box');
+            if (graph) {
+                const newHeight = entry.contentRect.height;
+                const newWidth = entry.contentRect.width;
+                Plotly.relayout(graph, { height: newHeight, width: newWidth });
+            }
+        }
+    });
+    document.querySelectorAll('.graph-resizable').forEach(box => {
+        resizeObserver.observe(box);
+    });
+
+    function dragStart(e) {
+        e.dataTransfer.setData("text/plain", e.target.id);
+    }
+    function allowDrop(e) {
+        e.preventDefault();
+    }
+    function drop(e) {
+        e.preventDefault();
+        const draggedId = e.dataTransfer.getData("text/plain");
+        const draggedEl = document.getElementById(draggedId);
+        const dropTarget = e.currentTarget;
+        if (draggedEl && dropTarget && draggedEl !== dropTarget) {
+            const parent = dropTarget.parentNode;
+            parent.insertBefore(draggedEl, dropTarget);
+        }
+    }
+</script>
+   
+{% endblock %}

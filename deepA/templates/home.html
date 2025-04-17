@@ -1,0 +1,25 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Home
+{% endblock %}
+{% block main %}
+<div class="home-body">
+    <video autoplay muted loop id="bg-video">
+        <source src="{{ url_for('static', filename='background.mp4') }}" type="video/mp4">
+    </video>
+    <div class="home-container">
+        <div class="home-content">
+            <div class="home-title"> <h1>MacroAnalysis</h1></div>
+            <div class="home-subtitle"><h2>Explore Global Macro Economic Data Easily</h2></div>
+
+            <a class="home-button" href="/map"> Explore Map</a>
+            <a class="home-button" href="/compare"> Compare Countries</a>
+            <a class="home-button" href="https://youtu.be/YOUR_VIDEO_LINK" target="_blank"> How to Use</a>
+            <a class="home-button" href="/about"> About</a>
+            <a class="home-button" href="https://scratch.mit.edu/projects/1133621459/fullscreen/" target="_blank"
+               style="margin-top: 100px; animation: fadeIn 1.8s ease;">Bored? Let's dance!</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
