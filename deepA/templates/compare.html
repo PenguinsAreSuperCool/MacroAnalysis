@@ -50,6 +50,11 @@
             <button id="confirm-yes" style="margin-right: 10px;">Yes</button>
             <button id="confirm-no">No</button>
         </div>
+        <div class="button-search">
+            <label for="country_search">Or search for a country:</label>
+            <input type="text" id="country_search" placeholder="Type country name" style="width: 60%; padding: 0.4em; border-radius: 5px;">
+            <button type="button" onclick="searchCountry()" class="btn btn-secondary" style="margin-left: 0.5em;">Select</button>
+        </div>
         <div class="text-center">
             <a href="/map" class="btn btn-primary">Back to Map</a>
             <a href="/" class="btn btn-primary">Home</a>
@@ -116,5 +121,41 @@
     document.getElementById('confirm-no').onclick = function() {
         document.getElementById('confirm-box').style.display = 'none';
     };
+    
+    function searchCountry() {
+        const query = document.getElementById('country_search').value;
+        if (!query) return;
+
+        fetch(`https://nominatim.openstreetmap.org/search?country=${encodeURIComponent(query)}&format=json&limit=1`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.length > 0) {
+                    const { lat, lon } = data[0];
+
+                    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`)
+                        .then(res => res.json())
+                        .then(reverseData => {
+                            const countryCode = reverseData.address.country_code.toUpperCase();
+                            const countryName = reverseData.address.country;
+
+                            if (countryCode) {
+                                document.getElementById('confirm-text').textContent = `Do you want to select ${countryName}?`;
+                                const box = document.getElementById('confirm-box');
+                                box.style.left = '50%';
+                                box.style.top = '30%';
+                                box.style.transform = 'translate(-50%, -50%)';
+                                box.style.display = 'block';
+                                box.setAttribute('data-country-code', countryCode);
+                                box.setAttribute('data-country-name', countryName);
+                            } else {
+                                alert("Could not find a valid country code.");
+                            }
+                        });
+                } else {
+                    alert("Country not found. Please try again.");
+                }
+            })
+            .catch(() => alert("Error occurred during search."));
+    }
     </script>
 {% endblock %}

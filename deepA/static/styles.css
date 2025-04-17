@@ -143,6 +143,10 @@ blockquote {
     margin-top: 10px;
 }
 
+.button-search {
+    margin: 1em auto; 
+    text-align: center;      
+}
 @media (max-width: 600px) {
     .indicator-grid {
         grid-template-columns: 1fr !important;

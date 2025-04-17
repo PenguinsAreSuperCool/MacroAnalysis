@@ -27,7 +27,25 @@ codes = {
         "foreign_aid": "DT.ODA.ALLD.CD",
         "debt": "DT.DOD.DECT.CD",
         "stock_market": "CM.MKT.LCAP.CD",
-        "interest_rate": "FR.INR.LEND"
+        "interest_rate": "FR.INR.LEND",
+        "exports_gdp": "NE.EXP.GNFS.ZS",
+        "imports_gdp": "NE.IMP.GNFS.ZS",
+        "trade_gdp": "NE.TRD.GNFS.ZS",
+        "current_account_balance_gdp": "BN.CAB.XOKA.GD.ZS",
+        "employment_ratio_15_plus": "SL.EMP.TOTL.SP.ZS",
+        "youth_unemployment": "SL.UEM.1524.ZS",
+        "labor_force_participation": "SL.TLF.CACT.ZS",
+        "health_expenditure_per_capita": "SH.XPD.CHEX.PC.CD",
+        "physicians_per_1000": "SH.MED.PHYS.ZS",
+        "hospital_beds_per_1000": "SH.MED.BEDS.ZS",
+        "education_expenditure_gdp": "SE.XPD.TOTL.GD.ZS",
+        "school_enrollment_secondary": "SE.SEC.ENRR",
+        "co2_emissions_per_capita": "EN.ATM.CO2E.PC",
+        "forest_area": "AG.LND.FRST.ZS",
+        "clean_fuel_access": "EG.CFT.ACCS.ZS",
+        "military_expenditure_gdp": "MS.MIL.XPND.GD.ZS",
+        "tax_revenue_gdp": "GC.TAX.TOTL.GD.ZS",
+        "government_expenditure_gdp": "NE.CON.GOVT.ZS"
     }
 
 @app.route("/")
