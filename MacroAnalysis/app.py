@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect
 import requests
+import os
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
 
@@ -180,4 +181,6 @@ def compare_countries():
     else:
         return redirect("/compare")
 
-app.run()
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(debug=False, host="0.0.0.0", port=port)
