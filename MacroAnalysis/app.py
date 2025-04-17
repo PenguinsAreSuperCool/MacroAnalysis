@@ -180,4 +180,4 @@ def compare_countries():
     else:
         return redirect("/compare")
 
-app.run(debug=True)
+app.run()
