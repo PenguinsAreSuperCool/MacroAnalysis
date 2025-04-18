@@ -28,7 +28,20 @@
     const years = {{ years | list }};
 
     {% for indicator in indicators %}
-        let {{ indicator }}_values = {{ data_series[indicator] | map(attribute='value') | list | tojson }};
+        const {{ indicator }}_full_data = {{ data_series[indicator] | tojson }};
+        const currentYear = new Date().getFullYear();
+        const {{ indicator }}_historical = { x: [], y: [] };
+        const {{ indicator }}_forecast = { x: [], y: [] };
+ 
+        {{ indicator }}_full_data.forEach(point => {
+            if (point.year <= currentYear) {
+                {{ indicator }}_historical.x.push(point.year);
+                {{ indicator }}_historical.y.push(point.value);
+            } else {
+                {{ indicator }}_forecast.x.push(point.year);
+                {{ indicator }}_forecast.y.push(point.value);
+            }
+        });
         const layout_{{ indicator }} = {
             title: { text: '{{ indicator.replace("_", " ").title() }} of {{ country }}', font: { color: 'white' } },
             xaxis: { title: 'Year', color: 'white' },
@@ -37,13 +50,24 @@
             plot_bgcolor: 'black'
         };
 
-        Plotly.newPlot('graph_{{ indicator }}', [{
-            type: 'scatter',
-            mode: 'lines+markers',
-            x: years,
-            y: {{ indicator }}_values,
-            name: '{{ indicator.title() }}'
-        }], layout_{{ indicator }});
+        Plotly.newPlot('graph_{{ indicator }}', [
+            {
+                type: 'scatter',
+                mode: 'lines+markers',
+                x: {{ indicator }}_historical.x,
+                y: {{ indicator }}_historical.y,
+                name: '{{ indicator.title() }} (Historical)',
+                line: { dash: 'solid' }
+            },
+            {
+                type: 'scatter',
+                mode: 'lines+markers',
+                x: {{ indicator }}_forecast.x,
+                y: {{ indicator }}_forecast.y,
+                name: '{{ indicator.title() }} (Forecast)',
+                line: { dash: 'dot' }
+            }
+        ], layout_{{ indicator }});
     {% endfor %}
 
     window.addEventListener("resize", () => {

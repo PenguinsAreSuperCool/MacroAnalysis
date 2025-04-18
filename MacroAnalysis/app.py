@@ -49,7 +49,30 @@ codes = {
         "tax_revenue_gdp": "GC.TAX.TOTL.GD.ZS",
         "government_expenditure_gdp": "NE.CON.GOVT.ZS"
     }
-# Necessary limit to make the web run faster
+# Indicators from IMF to forecast 
+forecast_supported_indicators = {
+    "gdp": "NGDPD",
+    "gdp_per_capita": "NGDPDPC",
+    "inflation": "PCPIPCH"
+}
+
+def get_forecast_data(imf_indicator, country_iso3):
+    try:
+        url = f"https://dataservices.imf.org/REST/SDMX_JSON.svc/CompactData/WEO/..{country_iso3}.{imf_indicator}.?startPeriod=2024"
+        response = requests.get(url, headers={"User-Agent": "MacroAnalysis"}).json()
+        values = {}
+        series = response['CompactData']['DataSet']['Series']
+        if isinstance(series, dict):
+            obs = series.get('Obs', [])
+            for point in obs:
+                year = int(point['@TIME_PERIOD'])
+                value = float(point['@OBS_VALUE']) if point['@OBS_VALUE'] != '' else None
+                values[year] = value
+        return values
+    except Exception:
+        return {}
+
+# Necessary limit to make the application run faster
 Max_work_load = 100
 
 @app.route("/")
@@ -58,7 +81,7 @@ def home():
 
 @app.route("/map")
 def index():
-    return render_template("index.html", valid_indicators=codes.keys())
+    return render_template("index.html", valid_indicators=codes.keys(), current_year=datetime.now().year)
 
 def get_data(data_to_get, country_code, years):
     data_indicator = codes.get(data_to_get)
@@ -96,7 +119,6 @@ def country():
         if not indicators:
             indicators = ["gdp", "gdp_per_capita", "gdp_growth", "inflation", "unemployment"]
 
-
         start_year = int(start_year)
         end_year = int(end_year)
 
@@ -122,6 +144,14 @@ def country():
                         "value": values.get(year)
                     })
 
+            # Add forecast values if they exist in IMF
+            for indicator in indicators:
+                if indicator in forecast_supported_indicators:
+                    imf_code = forecast_supported_indicators[indicator]
+                    forecast = get_forecast_data(imf_code, country_code)
+                    for year in sorted(forecast):
+                        results[indicator].append({"year": year, "value": forecast[year]})
+
         return render_template("country.html", country=country, indicators=indicators, data_series=results, years=years)
     else:
         return redirect("/")
@@ -132,7 +162,7 @@ def about():
 
 @app.route("/compare")
 def compare():
-    return render_template("compare.html", valid_indicators=codes.keys())
+    return render_template("compare.html", valid_indicators=codes.keys(), current_year=datetime.now().year)
 
 @app.route("/compare/country", methods=["GET", "POST"])
 def compare_countries():
@@ -181,6 +211,15 @@ def compare_countries():
                         "year": year,
                         "value": values.get(year)
                     })
+
+            # Add forecast values if supported
+            for indicator in indicators:
+                if indicator in forecast_supported_indicators:
+                    imf_code = forecast_supported_indicators[indicator]
+                    for country_code in countries:
+                        forecast = get_forecast_data(imf_code, country_code)
+                        for year in sorted(forecast):
+                            data_series[country_code][indicator].append({"year": year, "value": forecast[year]})
 
         return render_template("compare_countries.html", countries=countries, indicators=indicators, data_series=data_series, years=years)
     else:

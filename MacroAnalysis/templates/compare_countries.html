@@ -38,14 +38,45 @@
             plot_bgcolor: 'black'
         };
 
-        var traces = countries.map(name => ({
-            type: 'scatter',
-            mode: 'lines+markers',
-            x: years,
-            y: dataSeries[name][{{ indicator | tojson }}].map(d => d.value),
-            name: name
-        }));
-
+        const currentYear = new Date().getFullYear();
+        const traces = [];
+ 
+        countries.forEach(name => {
+            const data = dataSeries[name][{{ indicator | tojson }}];
+            const histX = [], histY = [];
+            const foreX = [], foreY = [];
+ 
+            data.forEach(point => {
+                if (point.year <= currentYear) {
+                    histX.push(point.year);
+                    histY.push(point.value);
+                } else {
+                    foreX.push(point.year);
+                    foreY.push(point.value);
+                }
+            });
+ 
+            traces.push({
+                type: 'scatter',
+                mode: 'lines+markers',
+                x: histX,
+                y: histY,
+                name: `${name} (Historical)`,
+                line: { dash: 'solid' }
+            });
+ 
+            if (foreX.length > 0) {
+                traces.push({
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    x: foreX,
+                    y: foreY,
+                    name: `${name} (Forecast)`,
+                    line: { dash: 'dot' }
+                });
+            }
+        });
+ 
         Plotly.newPlot('graph_{{ indicator }}', traces, layout_{{ indicator }});
     {% endfor %}
 
