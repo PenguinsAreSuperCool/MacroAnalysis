@@ -141,6 +141,9 @@ blockquote {
     width: 100%;
 }
 
+.Logo {
+    text-decoration: none;
+}
 
 .indicator-grid {
     display: grid;
