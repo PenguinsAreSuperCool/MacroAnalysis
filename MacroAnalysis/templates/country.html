@@ -26,10 +26,10 @@
 <script src="https://cdn.plot.ly/plotly-3.0.1.min.js"></script>
 <script>
     const years = {{ years | list }};
+    const currentYear = new Date().getFullYear();
 
     {% for indicator in indicators %}
         const {{ indicator }}_full_data = {{ data_series[indicator] | tojson }};
-        const currentYear = new Date().getFullYear();
         const {{ indicator }}_historical = { x: [], y: [] };
         const {{ indicator }}_forecast = { x: [], y: [] };
  
