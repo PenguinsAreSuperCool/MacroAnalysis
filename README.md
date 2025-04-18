@@ -2,7 +2,7 @@
 ### Video Demo:
 ### Description:
 **MacroAnalysis** is a CS50 final project designed to allow users to easily see and compare almost every major macroeconomic indicator for nearly every country in the world.  
-All data is directly from the **World Bank**. Forecasts are from the **OECD**.
+All data is directly from the **World Bank**. Forecasts are from the **OECD**. Due to resource limitations, the OECD forecasting is disabled but all implemented.
 
 ## Key Features
 

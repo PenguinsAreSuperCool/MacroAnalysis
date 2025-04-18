@@ -50,36 +50,36 @@ codes = {
         "government_expenditure_gdp": "NE.CON.GOVT.ZS"
     }
 # Indicators from OECD to forecast 
-forecast_supported_indicators = {
-    "gdp": "NGDPD",
-    "gdp_per_capita": "NGDPDPC",
-    "inflation": "CPALTT01"
-}
+# forecast_supported_indicators = {
+#     "gdp": "NGDPD",
+#     "gdp_per_capita": "NGDPDPC",
+#     "inflation": "CPALTT01"
+# }
 
 @app.route('/favicon.ico')
 def favicon():
     return redirect(url_for('static', filename='favicon.ico'))
 
-def get_oecd_forecast_data(oecd_indicator, country_iso3):
-    try:
-        url = f"https://stats.oecd.org/SDMX-JSON/data/MEI/{oecd_indicator}.{country_iso3}.GY.M/all?startTime=2024"
-        response = requests.get(url, headers={"User-Agent": "MacroAnalysis"}, timeout=10).json()
-        data = response.get("dataSets", [{}])[0].get("observations", {})
-        dimensions = response.get("structure", {}).get("dimensions", {}).get("observation", [])
-        time_dim = next((dim for dim in dimensions if dim["id"] == "TIME_PERIOD"), None)
-        if not time_dim:
-            return {}
-
-        years = time_dim["values"]
-        values = {}
-        for key, val in data.items():
-            year_index = int(key.split(":")[-1])
-            year = int(years[year_index]["id"])
-            value = val[0]
-            values[year] = value
-        return values
-    except Exception:
-        return {}
+# def get_oecd_forecast_data(oecd_indicator, country_iso3):
+#     try:
+#         url = f"https://stats.oecd.org/SDMX-JSON/data/MEI/{oecd_indicator}.{country_iso3}.GY.M/all?startTime=2024"
+#         response = requests.get(url, headers={"User-Agent": "MacroAnalysis"}, timeout=10).json()
+#         data = response.get("dataSets", [{}])[0].get("observations", {})
+#         dimensions = response.get("structure", {}).get("dimensions", {}).get("observation", [])
+#         time_dim = next((dim for dim in dimensions if dim["id"] == "TIME_PERIOD"), None)
+#         if not time_dim:
+#             return {}
+#
+#         years = time_dim["values"]
+#         values = {}
+#         for key, val in data.items():
+#             year_index = int(key.split(":")[-1])
+#             year = int(years[year_index]["id"])
+#             value = val[0]
+#             values[year] = value
+#         return values
+#     except Exception:
+#         return {}
 
 # Necessary limit to make the application run faster
 Max_work_load = 100
@@ -154,12 +154,12 @@ def country():
                     })
 
             # Add forecast values if they exist in OECD
-            for indicator in indicators:
-                if indicator in forecast_supported_indicators:
-                    oecd_code = forecast_supported_indicators[indicator]
-                    forecast = get_oecd_forecast_data(oecd_code, country_code)
-                    for year in sorted(forecast):
-                        results[indicator].append({"year": year, "value": forecast[year]})
+            # for indicator in indicators:
+            #     if indicator in forecast_supported_indicators:
+            #         oecd_code = forecast_supported_indicators[indicator]
+            #         forecast = get_oecd_forecast_data(oecd_code, country_code)
+            #         for year in sorted(forecast):
+            #             results[indicator].append({"year": year, "value": forecast[year]})
 
         return render_template("country.html", country=country, indicators=indicators, data_series=results, years=years)
     else:
@@ -220,21 +220,21 @@ def compare_countries():
                         "year": year,
                         "value": values.get(year)
                     })
-
+            # due to resource limitations, this part is commented out
             # Add forecast values if supported using ThreadPoolExecutor
-            with ThreadPoolExecutor() as forecast_executor:
-                forecast_futures = {}
-                for indicator in indicators:
-                    if indicator in forecast_supported_indicators:
-                        for country_code in countries:
-                            forecast_futures[forecast_executor.submit(get_oecd_forecast_data, forecast_supported_indicators[indicator], country_code)] = (country_code, indicator)
-
-                for future in forecast_futures:
-                    country_code, indicator = forecast_futures[future]
-                    forecast = future.result()
-                    for year in sorted(forecast):
-                        if not any(d["year"] == year for d in data_series[country_code][indicator]):
-                            data_series[country_code][indicator].append({"year": year, "value": forecast[year]})
+            #with ThreadPoolExecutor() as forecast_executor:
+            #    forecast_futures = {}
+            #    for indicator in indicators:
+            #        if indicator in forecast_supported_indicators:
+            #            for country_code in countries:
+            #                forecast_futures[forecast_executor.submit(get_oecd_forecast_data, forecast_supported_indicators[indicator], country_code)] = (country_code, indicator)
+            #
+            #    for future in forecast_futures:
+            #        country_code, indicator = forecast_futures[future]
+            #        forecast = future.result()
+            #        for year in sorted(forecast):
+            #            if not any(d["year"] == year for d in data_series[country_code][indicator]):
+            #                data_series[country_code][indicator].append({"year": year, "value": forecast[year]})
 
         return render_template("compare_countries.html", countries=countries, indicators=indicators, data_series=data_series, years=years)
     else:
