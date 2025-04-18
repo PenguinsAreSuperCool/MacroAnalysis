@@ -49,7 +49,8 @@ codes = {
         "tax_revenue_gdp": "GC.TAX.TOTL.GD.ZS",
         "government_expenditure_gdp": "NE.CON.GOVT.ZS"
     }
-Max_work_load = 200
+# Necessary limit to make the web run faster
+Max_work_load = 100
 
 @app.route("/")
 def home():
