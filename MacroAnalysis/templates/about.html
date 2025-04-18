@@ -4,7 +4,7 @@
     About
 {% endblock %}
 {% block main %}
-<video autoplay muted loop id="bg-video">
+<video autoplay muted loop playsinline id="bg-video">
     <source src="{{ url_for('static', filename='background2.mp4') }}" type="video/mp4">
 </video>
 <div class="about_text home-body">
