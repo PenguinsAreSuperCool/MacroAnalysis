@@ -30,6 +30,9 @@
     const years = {{ years | list }};
 
     {% for indicator in indicators %}
+        let traces;
+        traces = [];
+ 
         const layout_{{ indicator }} = {
             title: { text: '{{ indicator.replace("_", " ").title() }} Comparison', font: { color: 'white' } },
             xaxis: { title: 'Year', color: 'white' },
@@ -38,7 +41,6 @@
             plot_bgcolor: 'black'
         };
 
-        const traces = [];
  
         countries.forEach(name => {
             const data = dataSeries[name][{{ indicator | tojson }}];
