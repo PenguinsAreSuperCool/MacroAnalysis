@@ -56,6 +56,10 @@ forecast_supported_indicators = {
     "inflation": "CPALTT01"
 }
 
+@app.route('/favicon.ico')
+def favicon():
+    return redirect(url_for('static', filename='favicon.ico'))
+
 def get_oecd_forecast_data(oecd_indicator, country_iso3):
     try:
         url = f"https://stats.oecd.org/SDMX-JSON/data/MEI/{oecd_indicator}.{country_iso3}.GY.M/all?startTime=2024"
@@ -217,13 +221,19 @@ def compare_countries():
                         "value": values.get(year)
                     })
 
-            # Add forecast values if supported
-            for indicator in indicators:
-                if indicator in forecast_supported_indicators:
-                    oecd_code = forecast_supported_indicators[indicator]
-                    for country_code in countries:
-                        forecast = get_oecd_forecast_data(oecd_code, country_code)
-                        for year in sorted(forecast):
+            # Add forecast values if supported using ThreadPoolExecutor
+            with ThreadPoolExecutor() as forecast_executor:
+                forecast_futures = {}
+                for indicator in indicators:
+                    if indicator in forecast_supported_indicators:
+                        for country_code in countries:
+                            forecast_futures[forecast_executor.submit(get_oecd_forecast_data, forecast_supported_indicators[indicator], country_code)] = (country_code, indicator)
+
+                for future in forecast_futures:
+                    country_code, indicator = forecast_futures[future]
+                    forecast = future.result()
+                    for year in sorted(forecast):
+                        if not any(d["year"] == year for d in data_series[country_code][indicator]):
                             data_series[country_code][indicator].append({"year": year, "value": forecast[year]})
 
         return render_template("compare_countries.html", countries=countries, indicators=indicators, data_series=data_series, years=years)
