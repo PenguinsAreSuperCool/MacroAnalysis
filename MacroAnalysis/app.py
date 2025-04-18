@@ -49,25 +49,30 @@ codes = {
         "tax_revenue_gdp": "GC.TAX.TOTL.GD.ZS",
         "government_expenditure_gdp": "NE.CON.GOVT.ZS"
     }
-# Indicators from IMF to forecast 
+# Indicators from OECD to forecast 
 forecast_supported_indicators = {
     "gdp": "NGDPD",
     "gdp_per_capita": "NGDPDPC",
-    "inflation": "PCPIPCH"
+    "inflation": "CPALTT01"
 }
 
-def get_forecast_data(imf_indicator, country_iso3):
+def get_oecd_forecast_data(oecd_indicator, country_iso3):
     try:
-        url = f"https://dataservices.imf.org/REST/SDMX_JSON.svc/CompactData/WEO/..{country_iso3}.{imf_indicator}.?startPeriod=2024"
-        response = requests.get(url, headers={"User-Agent": "MacroAnalysis"}).json()
+        url = f"https://stats.oecd.org/SDMX-JSON/data/MEI/{oecd_indicator}.{country_iso3}.GY.M/all?startTime=2024"
+        response = requests.get(url, headers={"User-Agent": "MacroAnalysis"}, timeout=10).json()
+        data = response.get("dataSets", [{}])[0].get("observations", {})
+        dimensions = response.get("structure", {}).get("dimensions", {}).get("observation", [])
+        time_dim = next((dim for dim in dimensions if dim["id"] == "TIME_PERIOD"), None)
+        if not time_dim:
+            return {}
+
+        years = time_dim["values"]
         values = {}
-        series = response['CompactData']['DataSet']['Series']
-        if isinstance(series, dict):
-            obs = series.get('Obs', [])
-            for point in obs:
-                year = int(point['@TIME_PERIOD'])
-                value = float(point['@OBS_VALUE']) if point['@OBS_VALUE'] != '' else None
-                values[year] = value
+        for key, val in data.items():
+            year_index = int(key.split(":")[-1])
+            year = int(years[year_index]["id"])
+            value = val[0]
+            values[year] = value
         return values
     except Exception:
         return {}
@@ -127,7 +132,7 @@ def country():
         country_code = country.upper()
         
         years = list(range(start_year, end_year + 1))
-        # insteresting solution to make this viable
+        # interesting solution to make this viable
         # when not using ThreadPoolExecutor, the code took ages to run!
         # API calls are made in parallel now, which makes it much faster!
 
@@ -144,11 +149,11 @@ def country():
                         "value": values.get(year)
                     })
 
-            # Add forecast values if they exist in IMF
+            # Add forecast values if they exist in OECD
             for indicator in indicators:
                 if indicator in forecast_supported_indicators:
-                    imf_code = forecast_supported_indicators[indicator]
-                    forecast = get_forecast_data(imf_code, country_code)
+                    oecd_code = forecast_supported_indicators[indicator]
+                    forecast = get_oecd_forecast_data(oecd_code, country_code)
                     for year in sorted(forecast):
                         results[indicator].append({"year": year, "value": forecast[year]})
 
@@ -215,9 +220,9 @@ def compare_countries():
             # Add forecast values if supported
             for indicator in indicators:
                 if indicator in forecast_supported_indicators:
-                    imf_code = forecast_supported_indicators[indicator]
+                    oecd_code = forecast_supported_indicators[indicator]
                     for country_code in countries:
-                        forecast = get_forecast_data(imf_code, country_code)
+                        forecast = get_oecd_forecast_data(oecd_code, country_code)
                         for year in sorted(forecast):
                             data_series[country_code][indicator].append({"year": year, "value": forecast[year]})
 
