@@ -28,9 +28,10 @@
     const countries = {{ countries | tojson }};
     const dataSeries = {{ data_series | tojson }};
     const years = {{ years | list }};
+    let traces;
+    const currentYear = new Date().getFullYear();
 
     {% for indicator in indicators %}
-        let traces;
         traces = [];
  
         const layout_{{ indicator }} = {
