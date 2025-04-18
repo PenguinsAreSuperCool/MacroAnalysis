@@ -9,9 +9,6 @@
         <div class="text-center">
             <h1><a href="/">MacroAnalysis</a></h1>
         </div>
-        <div class="text-center" style="margin-bottom: 10px;">
-            <button onclick="toggleMapTheme()" class="btn btn-secondary">Switch Map Theme</button>
-        </div>
         <div class="text-center">
             <form id="country_form" action="/country" method="post" class="text-center">
                 <input type="hidden" name="country" id="country">
@@ -49,6 +46,9 @@
         <input type="text" id="country_search" placeholder="Type country name">
         <button type="button" onclick="searchCountry()" class="btn btn-secondary">Select</button>
     </div>
+    <div class="text-center" style="margin-bottom: 10px;">
+        <button onclick="toggleMapTheme()" class="btn btn-secondary">I make dubious choices</button>
+    </div>
     <div class="text-center">
         <a href="/compare" class="btn btn-primary">Compare Countries</a>
         <a href="/" class="btn btn-primary">Home</a>
@@ -58,8 +58,8 @@
     // Initialize the map
     const map = L.map('map').setView([20, 0], 3); // center of the world
 
-    let currentTheme = 'voyager';
-    let tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    let currentTheme = 'dark_all';
+    let tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
         attribution: '© OpenStreetMap contributors'
     }).addTo(map);
     

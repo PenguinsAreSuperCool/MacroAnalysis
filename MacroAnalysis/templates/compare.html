@@ -9,9 +9,6 @@
         <div class="text-center">
             <h1><a href="/">MacroAnalysis</a></h1>
         </div>
-        <div class="text-center" style="margin-bottom: 10px;">
-            <button onclick="toggleMapTheme()" class="btn btn-secondary">Switch Map Theme</button>
-        </div>
         <div class="text-center">
             <form id="country_form" action="/compare/country" method="post" class="text-center">
                 <input type="hidden" name="country1" id="country1">
@@ -60,6 +57,9 @@
             <label for="country_search">Or search for a country:</label>
             <input type="text" id="country_search" placeholder="Type country name" style="width: 60%; padding: 0.4em; border-radius: 5px;">
             <button type="button" onclick="searchCountry()" class="btn btn-secondary" style="margin-left: 0.5em;">Select</button>
+        </div>
+        <div class="text-center" style="margin-bottom: 10px;">
+            <button onclick="toggleMapTheme()" class="btn btn-secondary">I make dubious choices</button>
         </div>
         <div class="text-center">
             <a href="/map" class="btn btn-primary">Back to Map</a>
