@@ -9,6 +9,9 @@
         <div class="text-center">
             <h1><a href="/">MacroAnalysis</a></h1>
         </div>
+        <div class="text-center" style="margin-bottom: 10px;">
+            <button onclick="toggleMapTheme()" class="btn btn-secondary">Switch Map Theme</button>
+        </div>
         <div class="text-center">
             <form id="country_form" action="/compare/country" method="post" class="text-center">
                 <input type="hidden" name="country1" id="country1">
@@ -69,9 +72,25 @@
     const map = L.map('map').setView([20, 0], 3); // center of the world
 
     // Add OpenStreetMap tiles
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    let currentTheme = 'dark_all';
+    let tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
         attribution: '© OpenStreetMap contributors'
     }).addTo(map);
+
+    function toggleMapTheme() {
+        map.removeLayer(tileLayer);
+        if (currentTheme === 'dark_all') {
+            currentTheme = 'voyager';
+            tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+        } else {
+            currentTheme = 'dark_all';
+            tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+        }
+    }
     
     let selectedCountry = "";
 
