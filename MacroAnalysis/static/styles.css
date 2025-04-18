@@ -36,7 +36,6 @@ form {
     z-index: -1;
     object-fit: cover;
     pointer-events: none;
-    transform: translateZ(0);
 }
 #country_search {
     width: 60%; 
