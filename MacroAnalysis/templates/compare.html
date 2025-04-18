@@ -157,5 +157,36 @@
             })
             .catch(() => alert("Error occurred during search."));
     }
+    const MAX_WORKLOAD = 200;
+ 
+    function calculateWorkload() {
+        const numIndicators = document.querySelectorAll('input[name="indicators"]:checked').length;
+ 
+        let numCountries = 0;
+        const countryFields = ["country1", "country2", "country3", "country4", "country5", "country6", "country7", "country8", "country9", "country10"];
+        countryFields.forEach(field => {
+            const val = document.getElementById(field);
+            if (val && val.value) numCountries++;
+        });
+ 
+        return numIndicators * numCountries;
+    }
+ 
+    function validateForm() {
+        const workload = calculateWorkload();
+        if (workload > MAX_WORKLOAD) {
+            alert("Too much data selected. Please reduce the number of indicators or countries.");
+            return false;
+        }
+        return true;
+    }
+ 
+    // Attach to form
+    const form = document.getElementById("country_form");
+    if (form) {
+        form.onsubmit = function () {
+            return validateForm();
+        };
+    }
     </script>
 {% endblock %}

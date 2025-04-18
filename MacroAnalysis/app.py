@@ -49,6 +49,7 @@ codes = {
         "tax_revenue_gdp": "GC.TAX.TOTL.GD.ZS",
         "government_expenditure_gdp": "NE.CON.GOVT.ZS"
     }
+Max_work_load = 200
 
 @app.route("/")
 def home():
@@ -152,7 +153,10 @@ def compare_countries():
             return redirect("/compare")
         if not indicators:
             indicators = ["gdp", "gdp_per_capita", "gdp_growth", "inflation", "unemployment"]
-
+        # despite the ThreadPoolExecutor, it is still necessary to limit things here
+        if len(countries) * len(indicators) > Max_work_load:
+            return redirect("/compare")
+        
         start_year = int(start_year)
         end_year = int(end_year)
         
