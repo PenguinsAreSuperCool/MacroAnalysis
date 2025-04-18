@@ -5,6 +5,16 @@
     margin-top: 10px;
     max-width: 100%;
 }
+
+h1 a {
+    color: white;
+    text-decoration: none;
+}
+
+h1 a:hover {
+    text-decoration: none;
+    color: #ddd;
+}
 h1 {
     color: white;
     font-size: 2.5em;
@@ -139,10 +149,6 @@ blockquote {
     margin: auto;
     padding: 1em;
     width: 100%;
-}
-
-.Logo {
-    text-decoration: none;
 }
 
 .indicator-grid {
