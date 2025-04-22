@@ -79,7 +79,7 @@
             }
         });
  
-        Plotly.newPlot('graph_{{ indicator }}', traces, layout_{{ indicator }});
+        Plotly.newPlot('graph_{{ indicator }}', traces, layout_{{ indicator }}, { scrollZoom: false });
     {% endfor %}
 
     window.addEventListener("resize", () => {

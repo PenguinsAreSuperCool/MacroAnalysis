@@ -21,8 +21,11 @@
                 </span>
                 <details style="color: white; margin-top: 10px;">
                     <summary>Select data to display:</summary>
-                    <div class="indicator-grid">
-                        {% for indicator in valid_indicators %}
+                    <div style="margin: 10px 0;">
+                        <input type="text" id="indicatorSearch" placeholder="Search indicators..." style="width: 100%; padding: 5px;">
+                    </div>
+                    <div class="indicator-grid" id="indicatorList">
+                        {% for indicator in valid_indicators | sort %}
                             <label>
                                 <input type="checkbox" name="indicators" value="{{ indicator }}">
                                 {{ indicator.replace('_', ' ').title() }}
@@ -78,6 +81,42 @@
         }
     }
     
+    function highlightFeature(e) {
+        const layer = e.target;
+        layer.setStyle({
+            weight: 2,
+            color: '#f0f',
+            fillOpacity: 0.3
+        });
+        layer.bringToFront();
+    }
+
+    function resetHighlight(e) {
+        geojson.resetStyle(e.target);
+    }
+
+    function onEachFeature(feature, layer) {
+        layer.on({
+            mouseover: highlightFeature,
+            mouseout: resetHighlight
+        });
+    }
+
+    let geojson;
+    fetch("/static/data/countries.geo.json")
+        .then(res => res.json())
+        .then(data => {
+            geojson = L.geoJson(data, {
+                style: {
+                    fillColor: '#444',
+                    weight: 1,
+                    color: '#888',
+                    fillOpacity: 0
+                },
+                onEachFeature: onEachFeature
+            }).addTo(map);
+        });
+
     let selectedCountry = "";
 
     map.on('click', function(e) {
@@ -107,21 +146,13 @@
             .then(data => {
                 if (data.length > 0) {
                     const { lat, lon } = data[0];
-
                     fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`)
                         .then(res => res.json())
                         .then(reverseData => {
                             const countryCode = reverseData.address.country_code.toUpperCase();
-                            const countryName = reverseData.address.country;
-
                             if (countryCode) {
                                 document.getElementById('country').value = countryCode;
-                                document.getElementById('confirm-text').textContent = `Do you want to view data for ${countryName}?`;
-                                const box = document.getElementById('confirm-box');
-                                box.style.left = '50%';
-                                box.style.top = '30%';
-                                box.style.transform = 'translate(-50%, -50%)';
-                                box.style.display = 'block';
+                                document.getElementById('country_form').submit(); // directly submit form
                             } else {
                                 alert("Could not find a valid country code.");
                             }
@@ -140,6 +171,17 @@
     document.getElementById('confirm-no').onclick = function() {
         document.getElementById('confirm-box').style.display = 'none';
     };
+    </script>
+    <script>
+        // Filter indicators based on search input
+        document.getElementById('indicatorSearch').addEventListener('input', function () {
+            const filter = this.value.toLowerCase();
+            const labels = document.querySelectorAll('#indicatorList label');
+            labels.forEach(label => {
+                const text = label.textContent.toLowerCase();
+                label.style.display = text.includes(filter) ? '' : 'none';
+            });
+        });
     </script>
     <script>
         const maxYear = {{ current_year - 2 }};
