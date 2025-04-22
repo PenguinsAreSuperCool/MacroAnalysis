@@ -30,11 +30,8 @@
                 </span>
                 <details style="color: white; margin-top: 10px;">
                     <summary>Select data to display:</summary>
-                    <div style="margin: 10px 0;">
-                        <input type="text" id="indicatorSearch" placeholder="Search indicators..." style="width: 100%; padding: 5px;">
-                    </div>
-                    <div class="indicator-grid" id="indicatorList">
-                        {% for indicator in valid_indicators | sort %}
+                    <div class="indicator-grid">
+                        {% for indicator in valid_indicators %}
                             <label>
                                 <input type="checkbox" name="indicators" value="{{ indicator }}">
                                 {{ indicator.replace('_', ' ').title() }}
@@ -50,6 +47,12 @@
         <div id="selected-countries" style="margin: 20px auto; max-width: 600px; text-align: center;"></div>
         <div id="map" class="compare-map"></div>
 
+        <div id="confirm-box" style="display:none; position:fixed; 
+            background-color:#222; padding:20px; border-radius:8px; color:white; box-shadow:0 0 10px rgba(0,0,0,0.5); z-index:1000;">
+            <p id="confirm-text">Do you want to view data for this country?</p>
+            <button id="confirm-yes" style="margin-right: 10px;">Yes</button>
+            <button id="confirm-no">No</button>
+        </div>
         <div class="button-search">
             <label for="country_search">Or search for a country:</label>
             <input type="text" id="country_search" placeholder="Type country name" style="width: 60%; padding: 0.4em; border-radius: 5px;">
@@ -89,90 +92,58 @@
         }
     }
     
-    let selectedCountries = [];
+    let selectedCountry = "";
 
-    function highlightFeature(e) {
-        const layer = e.target;
-        if (!selectedCountries.includes(layer.feature.properties.ISO_A2)) {
-            layer.setStyle({
-                weight: 2,
-                color: '#f0f',
-                fillOpacity: 0.5
+    map.on('click', function(e) {
+        const { lat, lng } = e.latlng;
+
+        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+            .then(res => res.json())
+            .then(data => {
+                const selectedCountry = data.address.country;
+                const countryCode = data.address.country_code.toUpperCase();
+                const mapPoint = map.latLngToContainerPoint(e.latlng);
+                const box = document.getElementById('confirm-box');
+                document.getElementById('confirm-text').textContent = `Do you want to select ${selectedCountry}?`;
+                box.style.left = `${mapPoint.x}px`;
+                box.style.top = `${mapPoint.y}px`;
+                box.style.display = 'block';
+                box.setAttribute('data-country-code', countryCode);
+                box.setAttribute('data-country-name', selectedCountry);
             });
-        }
-    }
+    });
 
-    function resetHighlight(e) {
-        const layer = e.target;
-        if (!selectedCountries.includes(layer.feature.properties.ISO_A2)) {
-            geojson.resetStyle(layer);
-        }
-    }
+    document.getElementById('confirm-yes').onclick = function() {
+        const box = document.getElementById('confirm-box');
+        const code = box.getAttribute('data-country-code');
+        const name = box.getAttribute('data-country-name');
 
-    function setSelectedStyle(layer) {
-        layer.setStyle({
-            weight: 2,
-            color: '#0f0',
-            fillOpacity: 0.6
-        });
-    }
+        const fields = ['country1', 'country2', 'country3', 'country4', 'country5', 'country6', 'country7', 'country8', 'country9', 'country10'];
+        for (let field of fields) {
+            const input = document.getElementById(field);
+            if (!input.value) {
+                input.value = code;
 
-    function onEachFeature(feature, layer) {
-        layer.on({
-            mouseover: highlightFeature,
-            mouseout: resetHighlight,
-            click: function(e) {
-                const code = feature.properties.ISO_A2;
-                const name = feature.properties.ADMIN;
-
-                if (!selectedCountries.includes(code)) {
-                    selectedCountries.push(code);
-                    setSelectedStyle(layer);
-
-                    const fields = ['country1','country2','country3','country4','country5','country6','country7','country8','country9','country10'];
-                    for (let field of fields) {
-                        const input = document.getElementById(field);
-                        if (!input.value) {
-                            input.value = code;
-
-                            const btn = document.createElement("button");
-                            btn.textContent = name + " ✕";
-                            btn.className = "btn btn-sm btn-danger";
-                            btn.style.margin = "5px";
-                            btn.onclick = function() {
-                                input.value = "";
-                                btn.remove();
-                                selectedCountries = selectedCountries.filter(c => c !== code);
-                                geojson.eachLayer(l => {
-                                    if (l.feature.properties.ISO_A2 === code) {
-                                        geojson.resetStyle(l);
-                                    }
-                                });
-                            };
-                            document.getElementById("selected-countries").appendChild(btn);
-                            break;
-                        }
-                    }
-                }
+                const btn = document.createElement("button");
+                btn.textContent = name + " ✕";
+                btn.className = "btn btn-sm btn-danger";
+                btn.style.margin = "5px";
+                btn.onclick = function() {
+                    input.value = "";
+                    btn.remove();
+                };
+                document.getElementById("selected-countries").appendChild(btn);
+                break;
             }
-        });
-    }
+        }
 
-    let geojson;
-    fetch("/static/data/countries.geo.json")
-        .then(res => res.json())
-        .then(data => {
-            geojson = L.geoJson(data, {
-                style: {
-                    fillColor: '#444',
-                    weight: 1,
-                    color: '#888',
-                    fillOpacity: 0
-                },
-                onEachFeature: onEachFeature
-            }).addTo(map);
-        });
+        box.style.display = 'none';
+    };
 
+    document.getElementById('confirm-no').onclick = function() {
+        document.getElementById('confirm-box').style.display = 'none';
+    };
+    
     function searchCountry() {
         const query = document.getElementById('country_search').value;
         if (!query) return;
@@ -190,24 +161,14 @@
                             const countryName = reverseData.address.country;
 
                             if (countryCode) {
-                                const fields = ['country1','country2','country3','country4','country5','country6','country7','country8','country9','country10'];
-                                for (let field of fields) {
-                                    const input = document.getElementById(field);
-                                    if (!input.value) {
-                                        input.value = countryCode;
-
-                                        const btn = document.createElement("button");
-                                        btn.textContent = countryName + " ✕";
-                                        btn.className = "btn btn-sm btn-danger";
-                                        btn.style.margin = "5px";
-                                        btn.onclick = function() {
-                                            input.value = "";
-                                            btn.remove();
-                                        };
-                                        document.getElementById("selected-countries").appendChild(btn);
-                                        break;
-                                    }
-                                }
+                                document.getElementById('confirm-text').textContent = `Do you want to select ${countryName}?`;
+                                const box = document.getElementById('confirm-box');
+                                box.style.left = '50%';
+                                box.style.top = '30%';
+                                box.style.transform = 'translate(-50%, -50%)';
+                                box.style.display = 'block';
+                                box.setAttribute('data-country-code', countryCode);
+                                box.setAttribute('data-country-name', countryName);
                             } else {
                                 alert("Could not find a valid country code.");
                             }
@@ -218,14 +179,6 @@
             })
             .catch(() => alert("Error occurred during search."));
     }
-    document.getElementById('indicatorSearch').addEventListener('input', function () {
-        const filter = this.value.toLowerCase();
-        const labels = document.querySelectorAll('#indicatorList label');
-        labels.forEach(label => {
-            const text = label.textContent.toLowerCase();
-            label.style.display = text.includes(filter) ? '' : 'none';
-        });
-    });
     const MAX_WORKLOAD = 100;
  
     function calculateWorkload() {
