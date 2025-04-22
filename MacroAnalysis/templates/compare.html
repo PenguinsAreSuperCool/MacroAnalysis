@@ -203,15 +203,6 @@
 
     // --- Country selection and highlight logic ---
 
-    // Style for selected countries in red
-    function highlightFeatureOnLayer(layer) {
-        layer.setStyle({
-            weight: 2,
-            color: 'red',
-            fillOpacity: 0.4
-        });
-    }
-
     // Highlight countries on hover using GeoJSON
     function highlightFeature(e) {
         const layer = e.target;
