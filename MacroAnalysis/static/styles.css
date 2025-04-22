@@ -123,6 +123,8 @@ blockquote {
 }
 .graph-box {
     height: 400px;
+    overflow: hidden !important;
+    touch-action: none;
 }
 .graph-resizable {
     resize: both;

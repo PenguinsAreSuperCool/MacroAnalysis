@@ -79,7 +79,12 @@
             }
         });
  
-        Plotly.newPlot('graph_{{ indicator }}', traces, layout_{{ indicator }}, { scrollZoom: false });
+        Plotly.newPlot('graph_{{ indicator }}', traces, layout_{{ indicator }}, {
+            scrollZoom: false,
+            displayModeBar: true,
+            staticPlot: false,
+            doubleClick: false
+        });
     {% endfor %}
 
     window.addEventListener("resize", () => {
@@ -146,5 +151,10 @@
         }
     });
 </script>
-   
+<style>
+.graph-box {
+    overflow: hidden !important;
+    touch-action: none;
+}
+</style>
 {% endblock %}

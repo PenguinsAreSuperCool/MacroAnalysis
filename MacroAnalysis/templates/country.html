@@ -67,7 +67,7 @@
                 name: '{{ indicator.title() }} (Forecast)',
                 line: { dash: 'dot' }
             }
-        ], layout_{{ indicator }}, { scrollZoom: false });
+        ], layout_{{ indicator }}, { scrollZoom: false, displayModeBar: true, staticPlot: false, doubleClick: false });
     {% endfor %}
 
     window.addEventListener("resize", () => {
