@@ -115,11 +115,24 @@
                                         btn.textContent = countryName + " ✕";
                                         btn.className = "btn btn-sm btn-danger";
                                         btn.style.margin = "5px";
-                                        btn.onclick = function() {
+                                        btn.onclick = function () {
                                             input.value = "";
                                             btn.remove();
+                                            selectedCountries = selectedCountries.filter(c => c !== countryCode);
+                                            geojson.eachLayer(l => {
+                                                if (l.feature.properties.ISO_A3 === countryCode) {
+                                                    geojson.resetStyle(l);
+                                                }
+                                            });
                                         };
                                         document.getElementById("selected-countries").appendChild(btn);
+
+                                        geojson.eachLayer(l => {
+                                            if (l.feature.properties.ISO_A3 === countryCode) {
+                                                highlightSelectedCountry(l);
+                                            }
+                                        });
+
                                         break;
                                     }
                                 }
@@ -219,12 +232,12 @@
         }
     }
 
-    // Style for selected countries
-    function setSelectedStyle(layer) {
+    // Style for selected countries in red
+    function highlightSelectedCountry(layer) {
         layer.setStyle({
             weight: 2,
-            color: '#0f0',
-            fillOpacity: 0.6
+            color: 'red',
+            fillOpacity: 0.4
         });
     }
 
@@ -271,8 +284,9 @@
                             const code = feature?.properties?.ISO_A3;
                             const name = feature?.properties?.NAME;
                             if (!code || selectedCountries.includes(code)) return;
+
                             selectedCountries.push(code);
-                            setSelectedStyle(layer);
+                            highlightSelectedCountry(layer);
                             addCountryToForm(code, name);
                         }
                     });
