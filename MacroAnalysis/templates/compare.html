@@ -30,8 +30,11 @@
                 </span>
                 <details style="color: white; margin-top: 10px;">
                     <summary>Select data to display:</summary>
-                    <div class="indicator-grid">
-                        {% for indicator in valid_indicators %}
+                    <div style="margin: 10px 0;">
+                        <input type="text" id="indicatorSearch" placeholder="Search indicators..." style="width: 100%; padding: 5px;">
+                    </div>
+                    <div class="indicator-grid" id="indicatorList">
+                        {% for indicator in valid_indicators | sort %}
                             <label>
                                 <input type="checkbox" name="indicators" value="{{ indicator }}">
                                 {{ indicator.replace('_', ' ').title() }}
@@ -221,6 +224,53 @@
             yearWarning.style.display = 'none';
         }
     });
+
+    // Indicator search/filter
+    document.getElementById('indicatorSearch').addEventListener('input', function () {
+        const filter = this.value.toLowerCase();
+        const labels = document.querySelectorAll('#indicatorList label');
+        labels.forEach(label => {
+            const text = label.textContent.toLowerCase();
+            label.style.display = text.includes(filter) ? '' : 'none';
+        });
+    });
+
+    // Highlight countries on hover using GeoJSON
+    function highlightFeature(e) {
+        const layer = e.target;
+        layer.setStyle({
+            weight: 2,
+            color: '#f0f',
+            fillOpacity: 0.3
+        });
+        layer.bringToFront();
+    }
+
+    function resetHighlight(e) {
+        if (geojson) {
+            geojson.resetStyle(e.target);
+        }
+    }
+
+    let geojson;
+    fetch("https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson")
+        .then(res => res.json())
+        .then(data => {
+            geojson = L.geoJson(data, {
+                style: {
+                    fillColor: '#444',
+                    weight: 1,
+                    color: '#888',
+                    fillOpacity: 0.01
+                },
+                onEachFeature: function (feature, layer) {
+                    layer.on({
+                        mouseover: highlightFeature,
+                        mouseout: resetHighlight
+                    });
+                }
+            }).addTo(map);
+        });
 
     </script>
 {% endblock %}
