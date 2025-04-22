@@ -38,12 +38,6 @@
         <div id="map"></div>
     </div>
 
-    <div id="confirm-box" style="display:none; position:fixed; 
-         background-color:#222; padding:20px; border-radius:8px; color:white; box-shadow:0 0 10px rgba(0,0,0,0.5); z-index:1000;">
-        <p id="confirm-text">Do you want to view data for this country?</p>
-        <button id="confirm-yes" style="margin-right: 10px;">Yes</button>
-        <button id="confirm-no">No</button>
-    </div>
     <div class="button-search">
         <label for="country_search">Or search for a country:</label>
         <input type="text" id="country_search" placeholder="Type country name">
@@ -119,23 +113,15 @@
             }).addTo(map);
         });
 
-    let selectedCountry = "";
-
     map.on('click', function(e) {
         const { lat, lng } = e.latlng;
 
         fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
             .then(res => res.json())
             .then(data => {
-                selectedCountry = data.address.country;
                 const countryCode = data.address.country_code.toUpperCase();
                 document.getElementById('country').value = countryCode;
-                document.getElementById('confirm-text').textContent = `Do you want to view data for ${selectedCountry}?`;
-                const mapPoint = map.latLngToContainerPoint(e.latlng);
-                const box = document.getElementById('confirm-box');
-                box.style.left = `${mapPoint.x}px`;
-                box.style.top = `${mapPoint.y}px`;
-                box.style.display = 'block';
+                document.getElementById('country_form').submit();
             });
     });
 
@@ -165,14 +151,6 @@
             })
             .catch(() => alert("Error occurred during search."));
     }
-
-    document.getElementById('confirm-yes').onclick = function() {
-        document.getElementById('country_form').submit();
-    };
-
-    document.getElementById('confirm-no').onclick = function() {
-        document.getElementById('confirm-box').style.display = 'none';
-    };
     </script>
     <script>
         // Filter indicators based on search input

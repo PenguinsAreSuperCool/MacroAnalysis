@@ -50,12 +50,6 @@
         <div id="selected-countries" style="margin: 20px auto; max-width: 600px; text-align: center;"></div>
         <div id="map" class="compare-map"></div>
 
-        <div id="confirm-box" style="display:none; position:fixed; 
-            background-color:#222; padding:20px; border-radius:8px; color:white; box-shadow:0 0 10px rgba(0,0,0,0.5); z-index:1000;">
-            <p id="confirm-text">Do you want to view data for this country?</p>
-            <button id="confirm-yes" style="margin-right: 10px;">Yes</button>
-            <button id="confirm-no">No</button>
-        </div>
         <div class="button-search">
             <label for="country_search">Or search for a country:</label>
             <input type="text" id="country_search" placeholder="Type country name" style="width: 60%; padding: 0.4em; border-radius: 5px;">
@@ -95,57 +89,6 @@
         }
     }
     
-    let selectedCountry = "";
-
-    map.on('click', function(e) {
-        const { lat, lng } = e.latlng;
-
-        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
-            .then(res => res.json())
-            .then(data => {
-                const selectedCountry = data.address.country;
-                const countryCode = data.address.country_code.toUpperCase();
-                const mapPoint = map.latLngToContainerPoint(e.latlng);
-                const box = document.getElementById('confirm-box');
-                document.getElementById('confirm-text').textContent = `Do you want to select ${selectedCountry}?`;
-                box.style.left = `${mapPoint.x}px`;
-                box.style.top = `${mapPoint.y}px`;
-                box.style.display = 'block';
-                box.setAttribute('data-country-code', countryCode);
-                box.setAttribute('data-country-name', selectedCountry);
-            });
-    });
-
-    document.getElementById('confirm-yes').onclick = function() {
-        const box = document.getElementById('confirm-box');
-        const code = box.getAttribute('data-country-code');
-        const name = box.getAttribute('data-country-name');
-
-        const fields = ['country1', 'country2', 'country3', 'country4', 'country5', 'country6', 'country7', 'country8', 'country9', 'country10'];
-        for (let field of fields) {
-            const input = document.getElementById(field);
-            if (!input.value) {
-                input.value = code;
-
-                const btn = document.createElement("button");
-                btn.textContent = name + " ✕";
-                btn.className = "btn btn-sm btn-danger";
-                btn.style.margin = "5px";
-                btn.onclick = function() {
-                    input.value = "";
-                    btn.remove();
-                };
-                document.getElementById("selected-countries").appendChild(btn);
-                break;
-            }
-        }
-
-        box.style.display = 'none';
-    };
-
-    document.getElementById('confirm-no').onclick = function() {
-        document.getElementById('confirm-box').style.display = 'none';
-    };
     
     function searchCountry() {
         const query = document.getElementById('country_search').value;
@@ -156,22 +99,30 @@
             .then(data => {
                 if (data.length > 0) {
                     const { lat, lon } = data[0];
-
                     fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`)
                         .then(res => res.json())
                         .then(reverseData => {
                             const countryCode = reverseData.address.country_code.toUpperCase();
                             const countryName = reverseData.address.country;
-
                             if (countryCode) {
-                                document.getElementById('confirm-text').textContent = `Do you want to select ${countryName}?`;
-                                const box = document.getElementById('confirm-box');
-                                box.style.left = '50%';
-                                box.style.top = '30%';
-                                box.style.transform = 'translate(-50%, -50%)';
-                                box.style.display = 'block';
-                                box.setAttribute('data-country-code', countryCode);
-                                box.setAttribute('data-country-name', countryName);
+                                const fields = ['country1','country2','country3','country4','country5','country6','country7','country8','country9','country10'];
+                                for (let field of fields) {
+                                    const input = document.getElementById(field);
+                                    if (!input.value) {
+                                        input.value = countryCode;
+
+                                        const btn = document.createElement("button");
+                                        btn.textContent = countryName + " ✕";
+                                        btn.className = "btn btn-sm btn-danger";
+                                        btn.style.margin = "5px";
+                                        btn.onclick = function() {
+                                            input.value = "";
+                                            btn.remove();
+                                        };
+                                        document.getElementById("selected-countries").appendChild(btn);
+                                        break;
+                                    }
+                                }
                             } else {
                                 alert("Could not find a valid country code.");
                             }
