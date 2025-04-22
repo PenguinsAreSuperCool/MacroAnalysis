@@ -151,8 +151,6 @@
             })
             .catch(() => alert("Error occurred during search."));
     }
-    </script>
-    <script>
         // Filter indicators based on search input
         document.getElementById('indicatorSearch').addEventListener('input', function () {
             const filter = this.value.toLowerCase();
@@ -162,8 +160,7 @@
                 label.style.display = text.includes(filter) ? '' : 'none';
             });
         });
-    </script>
-    <script>
+
         const maxYear = {{ current_year - 2 }};
         const endYearInput = document.getElementById('end_year');
         const yearWarning = document.getElementById('year-warning');

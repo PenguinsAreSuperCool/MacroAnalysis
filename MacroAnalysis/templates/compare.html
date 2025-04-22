@@ -74,6 +74,36 @@
         attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
+    map.on('click', function(e) {
+        const { lat, lng } = e.latlng;
+
+        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+            .then(res => res.json())
+            .then(data => {
+                const countryCode = data.address.country_code.toUpperCase();
+                const countryName = data.address.country;
+
+                const fields = ['country1','country2','country3','country4','country5','country6','country7','country8','country9','country10'];
+                for (let field of fields) {
+                    const input = document.getElementById(field);
+                    if (!input.value) {
+                        input.value = countryCode;
+
+                        const btn = document.createElement("button");
+                        btn.textContent = countryName + " ✕";
+                        btn.className = "btn btn-sm btn-danger";
+                        btn.style.margin = "5px";
+                        btn.onclick = function () {
+                            input.value = "";
+                            btn.remove();
+                        };
+                        document.getElementById("selected-countries").appendChild(btn);
+                        break;
+                    }
+                }
+            });
+    });
+
     function toggleMapTheme() {
         map.removeLayer(tileLayer);
         if (currentTheme === 'dark_all') {
@@ -279,16 +309,7 @@
                 onEachFeature: function (feature, layer) {
                     layer.on({
                         mouseover: highlightFeature,
-                        mouseout: resetHighlight,
-                        click: function (e) {
-                            const code = feature?.properties?.ISO_A3;
-                            const name = feature?.properties?.NAME;
-                            if (!code || selectedCountries.includes(code)) return;
-
-                            selectedCountries.push(code);
-                            highlightSelectedCountry(layer);
-                            addCountryToForm(code, name);
-                        }
+                        mouseout: resetHighlight
                     });
                 }
             }).addTo(map);
