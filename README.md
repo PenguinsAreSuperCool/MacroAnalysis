@@ -33,6 +33,8 @@ The fifth and last leads the user to the scratch project I did in the week 0 of 
 
 The challenges of implementing this project was mainly the speed. Implementing ThreadPoolExecutor was crucial to make things speedy. Sadly, the forecasting by OECD wasn't possible even with ThreadPoolExecutor. The reason for that, as I see it, is because the OECD API returns a giant value everytime it is contacted. However, the implementation in code seems to be all correct and could be used just be deleting the commented aspect of it. Were this project to run on a better server, I'm confident the MacroAnalyis tool could be even more useful.
 
+To go around this problem, I even tried to do data fetching client-side, but that didn't work because of CORS issues. I'm really limited by the technology of my time.
+
 
 The website can be accessed in MacroAnalysis.app
 
