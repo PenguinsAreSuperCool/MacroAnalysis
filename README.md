@@ -36,5 +36,5 @@ The challenges of implementing this project was mainly the speed. Implementing T
 To go around this problem, I even tried to do data fetching client-side, but that didn't work because of CORS issues. I'm really limited by the technology of my time.
 
 
-The website can be accessed in MacroAnalysis.app
+The website can be accessed in https://MacroAnalysis.app
 
