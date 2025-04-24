@@ -132,7 +132,7 @@ def country():
         end_year = int(end_year)
 
         # if ((start_year) > (end_year)) or ((start_year) < 1960) or ((end_year) > datetime.now().year - 2):
-            return redirect("/")
+        #    return redirect("/")
         country_code = country.upper()
         
         years = list(range(start_year, end_year + 1))
@@ -201,7 +201,7 @@ def compare_countries():
         end_year = int(end_year)
         
         # if start_year > end_year or start_year < 1960 or end_year > datetime.now().year - 2:
-            return redirect("/compare")
+        #    return redirect("/compare")
 
         years = list(range(start_year, end_year + 1))
 
