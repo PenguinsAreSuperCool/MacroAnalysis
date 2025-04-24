@@ -122,9 +122,9 @@ def country():
 
         # handling misinputs
         if not country or not start_year or not end_year:
-            return redirect("/")
+            return redirect("/map")
         if not start_year.isdigit() or not end_year.isdigit():
-            return redirect("/")
+            return redirect("/map")
         if not indicators:
             indicators = ["gdp", "gdp_per_capita", "gdp_growth", "inflation", "unemployment"]
 
@@ -163,7 +163,7 @@ def country():
 
         return render_template("country.html", country=country, indicators=indicators, data_series=results, years=years)
     else:
-        return redirect("/")
+        return redirect("/map")
 
 @app.route("/about")
 def about():
