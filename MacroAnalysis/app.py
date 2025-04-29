@@ -47,7 +47,22 @@ codes = {
         "clean_fuel_access": "EG.CFT.ACCS.ZS",
         "military_expenditure_gdp": "MS.MIL.XPND.GD.ZS",
         "tax_revenue_gdp": "GC.TAX.TOTL.GD.ZS",
-        "government_expenditure_gdp": "NE.CON.GOVT.ZS"
+        "government_expenditure_gdp": "NE.CON.GOVT.ZS",
+        "agriculture_gdp": "NV.AGR.TOTL.ZS",
+        "industry_gdp": "NV.IND.TOTL.ZS",
+        "services_gdp": "NV.SRV.TOTL.ZS",
+        "gdp_per_person_employed": "NY.GDP.PCAP.KD",
+        "government_revenue_gdp": "GC.REV.XGRT.GD.ZS",
+        "credit_to_private_sector_gdp": "FS.AST.PRVT.GD.ZS",
+        "high_tech_exports": "TX.VAL.TECH.MF.ZS",
+        "r_and_d_expenditure_gdp": "GB.XPD.RSDV.GD.ZS",
+        "external_debt_gni": "DT.DOD.DECT.GN.ZS",
+        "undernourishment": "SN.ITK.DEFC.ZS",
+        "age_dependency_ratio": "SP.POP.DPND",
+        "gender_parity_secondary_education": "SE.ENR.SECO.FM.ZS",
+        "homicide_rate": "VC.IHR.PSRC.P5",
+        "freshwater_withdrawals": "ER.H2O.FWST.ZS",
+        "pm25_air_pollution": "EN.ATM.PM25.MC.M3"
     }
 # Indicators from OECD to forecast 
 # forecast_supported_indicators = {
