@@ -24,10 +24,7 @@
                 <label for="start_year">Start Year:</label>
                 <input type="number" id="start_year" name="start_year" value="1960">
                 <label for="end_year">End Year:</label>
-                <input type="number" id="end_year" name="end_year" value="2023">
-                <span id="year-warning" style="color: white; font-size: 0.9em; display: none;">
-                    (maximum: {{ current_year - 2 }})
-                </span>
+                <input type="number" id="end_year" name="end_year" value="{{ current_year }}">
                 <details style="color: white; margin-top: 10px;">
                     <summary>Select data to display:</summary>
                     <div style="margin: 10px 0;">
@@ -231,42 +228,6 @@
             }
         }
     }
-
-    let geojson;
-    fetch("https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson")
-        .then(res => res.json())
-        .then(data => {
-            geojson = L.geoJson(data, {
-                style: {
-                    fillColor: '#444',
-                    weight: 1,
-                    color: '#888',
-                    fillOpacity: 0.01
-                },
-                onEachFeature: function (feature, layer) {
-                    layer.on({
-                        mouseover: highlightFeature,
-                        mouseout: resetHighlight
-                    });
-                }
-            }).addTo(map);
-
-            function updateCountryStyles() {
-                const fields = ['country1','country2','country3','country4','country5','country6','country7','country8','country9','country10'];
-                const selectedCodes = fields.map(f => document.getElementById(f).value).filter(v => v);
-
-                geojson.eachLayer(l => {
-                    const code = l.feature.properties.ISO_A3;
-                    if (selectedCodes.includes(code)) {
-                        highlightFeatureOnLayer(l);
-                    } else {
-                        geojson.resetStyle(l);
-                    }
-                });
-            }
-
-            window.updateCountryStyles = updateCountryStyles;
-        });
 
     </script>
 {% endblock %}

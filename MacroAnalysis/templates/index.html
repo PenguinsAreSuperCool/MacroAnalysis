@@ -15,10 +15,7 @@
                 <label for="start_year">Start Year:</label>
                 <input type="number" id="start_year" name="start_year" value="1960">
                 <label for="end_year">End Year:</label>
-                <input type="number" id="end_year" name="end_year" value="2023">
-                <span id="year-warning" style="color: white; font-size: 0.9em; display: none;">
-                    (maximum: {{ current_year - 2 }})
-                </span>
+                <input type="number" id="end_year" name="end_year" value="{{ current_year }}">
                 <details style="color: white; margin-top: 10px;">
                     <summary>Select data to display:</summary>
                     <div style="margin: 10px 0;">
@@ -159,18 +156,6 @@
                 const text = label.textContent.toLowerCase();
                 label.style.display = text.includes(filter) ? '' : 'none';
             });
-        });
-
-        const maxYear = {{ current_year - 2 }};
-        const endYearInput = document.getElementById('end_year');
-        const yearWarning = document.getElementById('year-warning');
-
-        endYearInput.addEventListener('input', function () {
-            if (parseInt(this.value) > maxYear) {
-                yearWarning.style.display = 'inline';
-            } else {
-                yearWarning.style.display = 'none';
-            }
         });
     </script>
 {% endblock %}

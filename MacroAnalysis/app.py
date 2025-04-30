@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect
 import requests
 import os
+import yfinance
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
 
@@ -255,6 +256,24 @@ def compare_countries():
     else:
         return redirect("/compare")
 
+@app.route("/stocks")
+def stocks():
+    return render_template("stocks.html", current_year=datetime.now().year)
+@app.route("/stocks/stock", methods=["GET", "POST"])
+def stock():
+    if request.method == "POST":
+        stock = request.form.get("stock")
+
+        if not stock:
+            return redirect("/stocks")
+        
+        
+        
+        return render_template("stock.html", stock=stock, data=data)
+    else:
+        return redirect("/stocks")
+
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(debug=False, host="0.0.0.0", port=port)
+    # port = int(os.environ.get("PORT", 5000))
+    # app.run(debug=False, host="0.0.0.0", port=port)
+    app.run(debug=True)
