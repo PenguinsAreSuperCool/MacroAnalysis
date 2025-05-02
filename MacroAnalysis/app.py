@@ -263,13 +263,13 @@ def stocks():
 def stock():
     if request.method == "POST":
         stock = request.form.get("stock")
-
         if not stock:
+            print("A")
             return redirect("/stocks")
-        
-        
-        
-        return render_template("stock.html", stock=stock, data=data)
+        stock = stock.upper()
+        s = yfinance.Ticker(stock)
+        data = s.history(period="max")
+        return render_template("specific_stock.html", stock=stock, data=data)
     else:
         return redirect("/stocks")
 
