@@ -1,7 +1,6 @@
 from flask import Flask, render_template, request, redirect
 import requests
 import os
-import yfinance
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
 
@@ -85,7 +84,7 @@ def favicon():
 #         time_dim = next((dim for dim in dimensions if dim["id"] == "TIME_PERIOD"), None)
 #         if not time_dim:
 #             return {}
-#
+
 #         years = time_dim["values"]
 #         values = {}
 #         for key, val in data.items():
@@ -95,7 +94,7 @@ def favicon():
 #             values[year] = value
 #         return values
 #     except Exception:
-#         return {}
+#          return {}
 
 # Necessary limit to make the application run faster
 Max_work_load = 100
@@ -238,13 +237,13 @@ def compare_countries():
                     })
             # due to resource limitations, this part is commented out
             # Add forecast values if supported using ThreadPoolExecutor
-            #with ThreadPoolExecutor() as forecast_executor:
+            # with ThreadPoolExecutor() as forecast_executor:
             #    forecast_futures = {}
             #    for indicator in indicators:
             #        if indicator in forecast_supported_indicators:
             #            for country_code in countries:
             #                forecast_futures[forecast_executor.submit(get_oecd_forecast_data, forecast_supported_indicators[indicator], country_code)] = (country_code, indicator)
-            #
+            
             #    for future in forecast_futures:
             #        country_code, indicator = forecast_futures[future]
             #        forecast = future.result()
@@ -255,23 +254,6 @@ def compare_countries():
         return render_template("compare_countries.html", countries=countries, indicators=indicators, data_series=data_series, years=years)
     else:
         return redirect("/compare")
-
-@app.route("/stocks")
-def stocks():
-    return render_template("stocks.html", current_year=datetime.now().year)
-@app.route("/stocks/stock", methods=["GET", "POST"])
-def stock():
-    if request.method == "POST":
-        stock = request.form.get("stock")
-        if not stock:
-            print("A")
-            return redirect("/stocks")
-        stock = stock.upper()
-        s = yfinance.Ticker(stock)
-        data = s.history(period="max")
-        return render_template("specific_stock.html", stock=stock, data=data)
-    else:
-        return redirect("/stocks")
 
 if __name__ == "__main__":
     # port = int(os.environ.get("PORT", 5000))
