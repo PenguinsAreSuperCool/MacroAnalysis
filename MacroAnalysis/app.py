@@ -67,7 +67,7 @@ codes = {
 # IMF WEO indicator codes
 forecast_supported_indicators = {
     "gdp": "NGDPD",           # Nominal GDP, current prices (Billions of U.S. dollars)
-    "gdp_per_capita": "PPPPC",     # GDP per capita, PPP (Current international dollar)
+    "gdp_per_capita": "NGDPDPC",   # GDP per capita, current prices (U.S. dollars)
     "inflation": "PCPIPCH",        # Inflation, average consumer prices (Percent change)
     "unemployment": "LUR",         # Unemployment rate (Percent of total labor force)
     "gdp_growth": "NGDP_RPCH"     # Real GDP growth (Annual percent change)
