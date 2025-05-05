@@ -3,7 +3,7 @@
 ### Description:
 
 **MacroAnalysis** is a CS50 final project designed to allow users to easily see and compare almost every major macroeconomic indicator for nearly every country in the world.
-All data is directly from the **World Bank**. Forecasts are from the **OECD**. Due to resource limitations, the OECD forecasting is disabled but all implemented.
+All data is directly from the **World Bank**. Forecasts are from the **IMF**. 
 
 ## Key Features
 
@@ -12,6 +12,7 @@ All data is directly from the **World Bank**. Forecasts are from the **OECD**. D
 - **Support for comparing multiple indicators and countries**
 - **Dark-themed UI**, as that should be the default
 - **Real-time economic data**
+- **Forecasting**
 
 ## How it works:
 
@@ -31,10 +32,8 @@ The fourth is an about page that talks about the creator and gives credit to the
 
 The fifth and last leads the user to the scratch project I did in the week 0 of CS50. The project is a dancing game with multiple characters and increasing difficulty.
 
-The challenges of implementing this project was mainly the speed. Implementing ThreadPoolExecutor was crucial to make things speedy. Sadly, the forecasting by OECD wasn't possible even with ThreadPoolExecutor. The reason for that, as I see it, is because the OECD API returns a giant value everytime it is contacted. However, the implementation in code seems to be all correct and could be used just be deleting the commented aspect of it. Were this project to run on a better server, I'm confident the MacroAnalyis tool could be even more useful.
-
-To go around this problem, I even tried to do data fetching client-side, but that didn't work because of CORS issues. I'm really limited by the technology of my time.
-
+The challenges of implementing this project was mainly the speed. Implementing ThreadPoolExecutor was crucial to make things speedy. 
+Adding forecasting was challenging because of different country codes and different behavior from the IMF API, but now it works! 
 
 The website can be accessed in https://MacroAnalysis.app
 
