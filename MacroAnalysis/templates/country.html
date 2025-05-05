@@ -27,6 +27,7 @@
 <script>
     const years = {{ years | list }};
     const currentYear = new Date().getFullYear();
+    const baseColor = '#1f77b4';  // Default Plotly blue color
 
     {% for indicator in indicators %}
         const {{ indicator }}_full_data = {{ data_series[indicator] | tojson }};
@@ -50,7 +51,6 @@
             plot_bgcolor: 'black'
         };
 
-        const baseColor = '#1f77b4';  // Default Plotly blue color
         Plotly.newPlot('graph_{{ indicator }}', [
             {
                 type: 'scatter',
