@@ -140,12 +140,11 @@ def get_imf_forecast_data(indicator, country_iso3):
             
             # Sort years to get the most recent actual data
             all_years = sorted([int(year) for year in country_data.keys()])
-            latest_actual_year = max([year for year in all_years if year <= current_year])
             
-            # Get forecast years (next 5 years after the latest actual data)
+            # Include current year and next 5 years in forecast
             forecast_years = [year for year in all_years 
-                            if year > latest_actual_year and 
-                            year <= latest_actual_year + 5]
+                            if year >= current_year and 
+                            year <= current_year + 5]
             
             # Process forecast years
             for year in forecast_years:
