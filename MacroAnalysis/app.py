@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, url_for, jsonify
 import requests
 import os
 from datetime import datetime
@@ -64,40 +64,144 @@ codes = {
         "freshwater_withdrawals": "ER.H2O.FWST.ZS",
         "pm25_air_pollution": "EN.ATM.PM25.MC.M3"
     }
-# Indicators from OECD to forecast 
-# forecast_supported_indicators = {
-#     "gdp": "NGDPD",
-#     "gdp_per_capita": "NGDPDPC",
-#     "inflation": "CPALTT01"
-# }
+# IMF WEO indicator codes
+forecast_supported_indicators = {
+    "gdp": "NGDPD",           # Nominal GDP, current prices (Billions of U.S. dollars)
+    "gdp_per_capita": "PPPPC",     # GDP per capita, PPP (Current international dollar)
+    "inflation": "PCPIPCH",        # Inflation, average consumer prices (Percent change)
+    "unemployment": "LUR",         # Unemployment rate (Percent of total labor force)
+    "gdp_growth": "NGDP_RPCH"     # Real GDP growth (Annual percent change)
+}
+
+# Comprehensive ISO2 to ISO3 country code mapping
+country_codes = {
+    'AF': 'AFG', 'AX': 'ALA', 'AL': 'ALB', 'DZ': 'DZA', 'AS': 'ASM', 'AD': 'AND', 'AO': 'AGO',
+    'AI': 'AIA', 'AQ': 'ATA', 'AG': 'ATG', 'AR': 'ARG', 'AM': 'ARM', 'AW': 'ABW', 'AU': 'AUS',
+    'AT': 'AUT', 'AZ': 'AZE', 'BS': 'BHS', 'BH': 'BHR', 'BD': 'BGD', 'BB': 'BRB', 'BY': 'BLR',
+    'BE': 'BEL', 'BZ': 'BLZ', 'BJ': 'BEN', 'BM': 'BMU', 'BT': 'BTN', 'BO': 'BOL', 'BA': 'BIH',
+    'BW': 'BWA', 'BV': 'BVT', 'BR': 'BRA', 'IO': 'IOT', 'BN': 'BRN', 'BG': 'BGR', 'BF': 'BFA',
+    'BI': 'BDI', 'KH': 'KHM', 'CM': 'CMR', 'CA': 'CAN', 'CV': 'CPV', 'KY': 'CYM', 'CF': 'CAF',
+    'TD': 'TCD', 'CL': 'CHL', 'CN': 'CHN', 'CX': 'CXR', 'CC': 'CCK', 'CO': 'COL', 'KM': 'COM',
+    'CG': 'COG', 'CD': 'COD', 'CK': 'COK', 'CR': 'CRI', 'CI': 'CIV', 'HR': 'HRV', 'CU': 'CUB',
+    'CY': 'CYP', 'CZ': 'CZE', 'DK': 'DNK', 'DJ': 'DJI', 'DM': 'DMA', 'DO': 'DOM', 'EC': 'ECU',
+    'EG': 'EGY', 'SV': 'SLV', 'GQ': 'GNQ', 'ER': 'ERI', 'EE': 'EST', 'ET': 'ETH', 'FK': 'FLK',
+    'FO': 'FRO', 'FJ': 'FJI', 'FI': 'FIN', 'FR': 'FRA', 'GF': 'GUF', 'PF': 'PYF', 'TF': 'ATF',
+    'GA': 'GAB', 'GM': 'GMB', 'GE': 'GEO', 'DE': 'DEU', 'GH': 'GHA', 'GI': 'GIB', 'GR': 'GRC',
+    'GL': 'GRL', 'GD': 'GRD', 'GP': 'GLP', 'GU': 'GUM', 'GT': 'GTM', 'GG': 'GGY', 'GN': 'GIN',
+    'GW': 'GNB', 'GY': 'GUY', 'HT': 'HTI', 'HM': 'HMD', 'VA': 'VAT', 'HN': 'HND', 'HK': 'HKG',
+    'HU': 'HUN', 'IS': 'ISL', 'IN': 'IND', 'ID': 'IDN', 'IR': 'IRN', 'IQ': 'IRQ', 'IE': 'IRL',
+    'IM': 'IMN', 'IL': 'ISR', 'IT': 'ITA', 'JM': 'JAM', 'JP': 'JPN', 'JE': 'JEY', 'JO': 'JOR',
+    'KZ': 'KAZ', 'KE': 'KEN', 'KI': 'KIR', 'KP': 'PRK', 'KR': 'KOR', 'KW': 'KWT', 'KG': 'KGZ',
+    'LA': 'LAO', 'LV': 'LVA', 'LB': 'LBN', 'LS': 'LSO', 'LR': 'LBR', 'LY': 'LBY', 'LI': 'LIE',
+    'LT': 'LTU', 'LU': 'LUX', 'MO': 'MAC', 'MK': 'MKD', 'MG': 'MDG', 'MW': 'MWI', 'MY': 'MYS',
+    'MV': 'MDV', 'ML': 'MLI', 'MT': 'MLT', 'MH': 'MHL', 'MQ': 'MTQ', 'MR': 'MRT', 'MU': 'MUS',
+    'YT': 'MYT', 'MX': 'MEX', 'FM': 'FSM', 'MD': 'MDA', 'MC': 'MCO', 'MN': 'MNG', 'ME': 'MNE',
+    'MS': 'MSR', 'MA': 'MAR', 'MZ': 'MOZ', 'MM': 'MMR', 'NA': 'NAM', 'NR': 'NRU', 'NP': 'NPL',
+    'NL': 'NLD', 'NC': 'NCL', 'NZ': 'NZL', 'NI': 'NIC', 'NE': 'NER', 'NG': 'NGA', 'NU': 'NIU',
+    'NF': 'NFK', 'MP': 'MNP', 'NO': 'NOR', 'OM': 'OMN', 'PK': 'PAK', 'PW': 'PLW', 'PS': 'PSE',
+    'PA': 'PAN', 'PG': 'PNG', 'PY': 'PRY', 'PE': 'PER', 'PH': 'PHL', 'PN': 'PCN', 'PL': 'POL',
+    'PT': 'PRT', 'PR': 'PRI', 'QA': 'QAT', 'RE': 'REU', 'RO': 'ROU', 'RU': 'RUS', 'RW': 'RWA',
+    'BL': 'BLM', 'SH': 'SHN', 'KN': 'KNA', 'LC': 'LCA', 'MF': 'MAF', 'PM': 'SPM', 'VC': 'VCT',
+    'WS': 'WSM', 'SM': 'SMR', 'ST': 'STP', 'SA': 'SAU', 'SN': 'SEN', 'RS': 'SRB', 'SC': 'SYC',
+    'SL': 'SLE', 'SG': 'SGP', 'SK': 'SVK', 'SI': 'SVN', 'SB': 'SLB', 'SO': 'SOM', 'ZA': 'ZAF',
+    'GS': 'SGS', 'ES': 'ESP', 'LK': 'LKA', 'SD': 'SDN', 'SR': 'SUR', 'SJ': 'SJM', 'SZ': 'SWZ',
+    'SE': 'SWE', 'CH': 'CHE', 'SY': 'SYR', 'TW': 'TWN', 'TJ': 'TJK', 'TZ': 'TZA', 'TH': 'THA',
+    'TL': 'TLS', 'TG': 'TGO', 'TK': 'TKL', 'TO': 'TON', 'TT': 'TTO', 'TN': 'TUN', 'TR': 'TUR',
+    'TM': 'TKM', 'TC': 'TCA', 'TV': 'TUV', 'UG': 'UGA', 'UA': 'UKR', 'AE': 'ARE', 'GB': 'GBR',
+    'US': 'USA', 'UM': 'UMI', 'UY': 'URY', 'UZ': 'UZB', 'VU': 'VUT', 'VE': 'VEN', 'VN': 'VNM',
+    'VG': 'VGB', 'VI': 'VIR', 'WF': 'WLF', 'EH': 'ESH', 'YE': 'YEM', 'ZM': 'ZMB', 'ZW': 'ZWE',
+}
+
+def get_imf_country_code(iso2_code):
+    # Convert 2-letter country codes to 3-letter IMF codes using a comprehensive mapping.
+    return country_codes.get(iso2_code.upper(), iso2_code)
 
 @app.route('/favicon.ico')
 def favicon():
     return redirect(url_for('static', filename='favicon.ico'))
 
-# def get_oecd_forecast_data(oecd_indicator, country_iso3):
-#     try:
-#         url = f"https://stats.oecd.org/SDMX-JSON/data/MEI/{oecd_indicator}.{country_iso3}.GY.M/all?startTime=2024"
-#         response = requests.get(url, headers={"User-Agent": "MacroAnalysis"}, timeout=10).json()
-#         data = response.get("dataSets", [{}])[0].get("observations", {})
-#         dimensions = response.get("structure", {}).get("dimensions", {}).get("observation", [])
-#         time_dim = next((dim for dim in dimensions if dim["id"] == "TIME_PERIOD"), None)
-#         if not time_dim:
-#             return {}
+def get_imf_forecast_data(indicator, country_iso3):
+    #Get forecast data from IMF's World Economic Outlook database.
+    try:
+        current_year = datetime.now().year
+        url = f"https://www.imf.org/external/datamapper/api/v1/{indicator}/{country_iso3}"
+        response = requests.get(url, timeout=10)
+        
+        if response.status_code != 200:
+            return {}
+            
+        data = response.json()
+        if not data or 'values' not in data or indicator not in data['values'] or country_iso3 not in data['values'][indicator]:
+            return {}
+                
+        values = {}
+        try:
+            country_data = data['values'][indicator][country_iso3]
+            
+            # Sort years to get the most recent actual data
+            all_years = sorted([int(year) for year in country_data.keys()])
+            latest_actual_year = max([year for year in all_years if year <= current_year])
+            
+            # Get forecast years (next 5 years after the latest actual data)
+            forecast_years = [year for year in all_years 
+                            if year > latest_actual_year and 
+                            year <= latest_actual_year + 5]
+            
+            # Process forecast years
+            for year in forecast_years:
+                value = country_data.get(str(year))
+                if value is not None:
+                    try:
+                        value = float(value)
+                        
+                        # Scale values based on indicator type
+                        if indicator == 'NGDPD':
+                            # Convert billions to raw dollars
+                            value = value * 1_000_000_000
+                            
+                        values[year] = {"value": value, "type": "forecast"}
+                    except (ValueError, TypeError):
+                        continue
+            
+            return values
+            
+        except KeyError:
+            return {}
+                    
+    except Exception:
+        return {}
 
-#         years = time_dim["values"]
-#         values = {}
-#         for key, val in data.items():
-#             year_index = int(key.split(":")[-1])
-#             year = int(years[year_index]["id"])
-#             value = val[0]
-#             values[year] = value
-#         return values
-#     except Exception:
-#          return {}
-
-# Necessary limit to make the application run faster
-Max_work_load = 100
+def get_data(indicator, country_code, years):
+    # Get historical and forecast data for a specific indicator and country.
+    
+    try:
+        values = {}
+        
+        # Get historical data from World Bank
+        url = f"http://api.worldbank.org/v2/country/{country_code}/indicator/{codes[indicator]}?format=json&date={min(years)}:{max(years)}"
+        wb_response = requests.get(url, headers={"User-Agent": "MacroAnalysis"}, timeout=10)
+        
+        if wb_response.status_code == 200:
+            response = wb_response.json()
+            
+            # Process historical data
+            if isinstance(response, list) and len(response) > 1:
+                for item in response[1]:
+                    year = int(item["date"])
+                    value = item["value"]
+                    if value is not None:
+                        values[year] = {"value": value, "type": "historical"}
+        
+        # Get forecast data from IMF if available
+        if indicator in forecast_supported_indicators:
+            imf_country_code = get_imf_country_code(country_code)
+            forecast_data = get_imf_forecast_data(forecast_supported_indicators[indicator], imf_country_code)
+            if forecast_data:
+                values.update(forecast_data)
+            
+        return values
+    except Exception:
+        return {}
 
 @app.route("/")
 def home():
@@ -107,24 +211,8 @@ def home():
 def index():
     return render_template("index.html", valid_indicators=codes.keys(), current_year=datetime.now().year)
 
-def get_data(data_to_get, country_code, years):
-    data_indicator = codes.get(data_to_get)
-    try:
-        start = min(years)
-        end = max(years)
-        url = f"https://api.worldbank.org/v2/country/{country_code}/indicator/{data_indicator}?format=json&per_page=100&date={start}:{end}"
-        headers = {
-            "User-Agent": "MacroAnalysis lupchinskileonardo@gmail.com"
-        }
-        response = requests.get(url, headers=headers).json()
-        values = {}
-        for item in response[1]:
-            year = int(item["date"])
-            value = item["value"]
-            values[year] = value
-        return values
-    except (TypeError, IndexError):
-        return {}
+# Necessary limit to make the application run faster
+Max_work_load = 100
 
 @app.route("/country", methods=["GET", "POST"])
 def country():
@@ -150,10 +238,14 @@ def country():
         #    return redirect("/")
         country_code = country.upper()
         
-        years = list(range(start_year, end_year + 1))
-        # interesting solution to make this viable
-        # when not using ThreadPoolExecutor, the code took ages to run!
-        # API calls are made in parallel now, which makes it much faster!
+        current_year = datetime.now().year
+        # If end year is current year or later and we have forecast indicators, extend the range
+        forecast_end_year = None
+        if end_year >= current_year and any(i in forecast_supported_indicators for i in indicators):
+            forecast_end_year = current_year + 5
+            years = list(range(start_year, forecast_end_year + 1))
+        else:
+            years = list(range(start_year, end_year + 1))
 
         with ThreadPoolExecutor() as executor:
             futures = {executor.submit(get_data, indicator, country_code, years): indicator for indicator in indicators}
@@ -163,18 +255,13 @@ def country():
                 indicator = futures[future]
                 values = future.result()
                 for year in years:
-                    results[indicator].append({
-                        "year": year,
-                        "value": values.get(year)
-                    })
-
-            # Add forecast values if they exist in OECD
-            # for indicator in indicators:
-            #     if indicator in forecast_supported_indicators:
-            #         oecd_code = forecast_supported_indicators[indicator]
-            #         forecast = get_oecd_forecast_data(oecd_code, country_code)
-            #         for year in sorted(forecast):
-            #             results[indicator].append({"year": year, "value": forecast[year]})
+                    if year in values:
+                        data = values[year]
+                        results[indicator].append({
+                            "year": year,
+                            "value": data["value"],
+                            "type": data["type"]
+                        })
 
         return render_template("country.html", country=country, indicators=indicators, data_series=results, years=years)
     else:
@@ -192,7 +279,7 @@ def compare():
 def compare_countries():
     if request.method == "POST":
         countries = []
-        # why not make range be inclusive? Would be so awesome
+        # Get selected countries
         for i in range(1, 11):
             code = request.form.get(f"country{i}")
             if code:
@@ -208,17 +295,20 @@ def compare_countries():
             return redirect("/compare")
         if not indicators:
             indicators = ["gdp", "gdp_per_capita", "gdp_growth", "inflation", "unemployment"]
-        # despite the ThreadPoolExecutor, it is still necessary to limit things here
+        # Limit workload
         if len(countries) * len(indicators) > Max_work_load:
             return redirect("/compare")
         
         start_year = int(start_year)
         end_year = int(end_year)
         
-        # if start_year > end_year or start_year < 1960 or end_year > datetime.now().year - 2:
-        #    return redirect("/compare")
-
-        years = list(range(start_year, end_year + 1))
+        # Handle forecasting extension
+        current_year = datetime.now().year
+        if end_year >= current_year and any(i in forecast_supported_indicators for i in indicators):
+            forecast_end_year = current_year + 5
+            years = list(range(start_year, forecast_end_year + 1))
+        else:
+            years = list(range(start_year, end_year + 1))
 
         with ThreadPoolExecutor() as executor:
             futures = {}
@@ -231,25 +321,13 @@ def compare_countries():
                 country_code, indicator = futures[future]
                 values = future.result()
                 for year in years:
-                    data_series[country_code][indicator].append({
-                        "year": year,
-                        "value": values.get(year)
-                    })
-            # due to resource limitations, this part is commented out
-            # Add forecast values if supported using ThreadPoolExecutor
-            # with ThreadPoolExecutor() as forecast_executor:
-            #    forecast_futures = {}
-            #    for indicator in indicators:
-            #        if indicator in forecast_supported_indicators:
-            #            for country_code in countries:
-            #                forecast_futures[forecast_executor.submit(get_oecd_forecast_data, forecast_supported_indicators[indicator], country_code)] = (country_code, indicator)
-            
-            #    for future in forecast_futures:
-            #        country_code, indicator = forecast_futures[future]
-            #        forecast = future.result()
-            #        for year in sorted(forecast):
-            #            if not any(d["year"] == year for d in data_series[country_code][indicator]):
-            #                data_series[country_code][indicator].append({"year": year, "value": forecast[year]})
+                    if year in values:
+                        data = values[year]
+                        data_series[country_code][indicator].append({
+                            "year": year,
+                            "value": data["value"],
+                            "type": data["type"]
+                        })
 
         return render_template("compare_countries.html", countries=countries, indicators=indicators, data_series=data_series, years=years)
     else:

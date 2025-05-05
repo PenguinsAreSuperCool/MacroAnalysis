@@ -34,10 +34,10 @@
         const {{ indicator }}_forecast = { x: [], y: [] };
  
         {{ indicator }}_full_data.forEach(point => {
-            if (point.year <= currentYear) {
+            if (point.type === 'historical') {
                 {{ indicator }}_historical.x.push(point.year);
                 {{ indicator }}_historical.y.push(point.value);
-            } else {
+            } else if (point.type === 'forecast') {
                 {{ indicator }}_forecast.x.push(point.year);
                 {{ indicator }}_forecast.y.push(point.value);
             }
@@ -50,6 +50,7 @@
             plot_bgcolor: 'black'
         };
 
+        const baseColor = '#1f77b4';  // Default Plotly blue color
         Plotly.newPlot('graph_{{ indicator }}', [
             {
                 type: 'scatter',
@@ -57,7 +58,7 @@
                 x: {{ indicator }}_historical.x,
                 y: {{ indicator }}_historical.y,
                 name: '{{ indicator.title() }} (Historical)',
-                line: { dash: 'solid' }
+                line: { dash: 'solid', color: baseColor }
             },
             {
                 type: 'scatter',
@@ -65,7 +66,8 @@
                 x: {{ indicator }}_forecast.x,
                 y: {{ indicator }}_forecast.y,
                 name: '{{ indicator.title() }} (Forecast)',
-                line: { dash: 'dot' }
+                line: { dash: 'dash', color: baseColor },
+                marker: { color: baseColor }
             }
         ], layout_{{ indicator }}, { scrollZoom: false, displayModeBar: true, staticPlot: false, doubleClick: false });
     {% endfor %}
