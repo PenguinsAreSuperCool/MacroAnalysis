@@ -17,6 +17,7 @@
     </div>
     <div class="text-center" style="margin-top: 1.5em;">
         <button id="toggle-layout" class="btn btn-secondary">Switch to Grid View</button>
+        <a href="/correlations" class="btn btn-primary">Indicator Correlations</a>
         <a href="/compare" class="btn btn-primary">Compare other Countries</a>
         <a href="/map" class="btn btn-primary">Back to Map</a>
         <a href="/" class="btn btn-primary">Home</a>
@@ -36,7 +37,7 @@
  
         const layout_{{ indicator }} = {
             title: { 
-                text: '{{ indicator.replace("_", " ").title() }} Comparison', 
+                text: '{{ indicator | replace("_", " ") | title }} Comparison', 
                 font: { color: 'white' } 
             },
             xaxis: { 
@@ -55,7 +56,9 @@
             scrollZoom: false,  // Disable mousewheel zoom
             hovermode: 'closest',
             staticPlot: true,  // This will completely disable all mouse interactions
-            margin: { t: 50, b: 50, l: 50, r: 50 }
+            margin: { t: 50, b: 50, l: 50, r: 50 },
+            autosize: true,
+            annotations: []
         };
 
  
@@ -63,17 +66,32 @@
             const data = dataSeries[name][{{ indicator | tojson }}];
             const histX = [], histY = [];
             const foreX = [], foreY = [];
+            
+            // Track if we have ranking data to display
+            window[`hasRanking_{{ indicator }}_${name.replace(/[^a-zA-Z0-9]/g, '_')}`] = false;
+            window[`latestRankingYear_{{ indicator }}_${name.replace(/[^a-zA-Z0-9]/g, '_')}`] = null;
+            window[`latestRanking_{{ indicator }}_${name.replace(/[^a-zA-Z0-9]/g, '_')}`] = null;
  
             data.forEach(point => {
                 if (point.type === 'historical') {
                     histX.push(point.year);
                     histY.push(point.value);
+                    
+                    // Check if this point has ranking data
+                    if (point.ranking && Object.keys(point.ranking).length > 0) {
+                        window[`hasRanking_{{ indicator }}_${name.replace(/[^a-zA-Z0-9]/g, '_')}`] = true;
+                        // Keep track of the latest year with ranking data
+                        if (!window[`latestRankingYear_{{ indicator }}_${name.replace(/[^a-zA-Z0-9]/g, '_')}`] || point.year > window[`latestRankingYear_{{ indicator }}_${name.replace(/[^a-zA-Z0-9]/g, '_')}`]) {
+                            window[`latestRankingYear_{{ indicator }}_${name.replace(/[^a-zA-Z0-9]/g, '_')}`] = point.year;
+                            window[`latestRanking_{{ indicator }}_${name.replace(/[^a-zA-Z0-9]/g, '_')}`] = point.ranking;
+                        }
+                    }
                 } else if (point.type === 'forecast') {
                     foreX.push(point.year);
                     foreY.push(point.value);
                 }
             });
- 
+            
             // Predefined color palette for consistent colors
             const colors = [
                 '#1f77b4', // blue
@@ -88,13 +106,24 @@
                 '#17becf'  // cyan
             ];
             const color = colors[countries.indexOf(name) % colors.length];
+            
+            // Ranking information is now included in the historical subtitle
 
             traces.push({
                 type: 'scatter',
                 mode: 'lines+markers',
                 x: histX,
                 y: histY,
-                name: `${name} (Historical)`,
+                name: function() {
+                    if (window[`hasRanking_{{ indicator }}_${name.replace(/[^a-zA-Z0-9]/g, '_')}`]) {
+                        const rank = window[`latestRanking_{{ indicator }}_${name.replace(/[^a-zA-Z0-9]/g, '_')}`].rank;
+                        const total = window[`latestRanking_{{ indicator }}_${name.replace(/[^a-zA-Z0-9]/g, '_')}`].total;
+                        const year = window[`latestRankingYear_{{ indicator }}_${name.replace(/[^a-zA-Z0-9]/g, '_')}`];
+                        return `${name} (Historical) - Rank: #${rank} of ${total} (${year})`;
+                    } else {
+                        return `${name} (Historical)`;
+                    }
+                }(),
                 line: { dash: 'solid', color: color },
                 marker: { color: color }
             });

@@ -1,0 +1,183 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Indicator Correlations
+{% endblock %}
+{% block main %}
+<div class="correlation-container">
+    <div class="text-center">
+        <h1><a href="/">MacroAnalysis</a></h1>
+        <h2>Economic Indicator Correlations</h2>
+        <p class="correlation-intro">Analyze how different economic indicators relate to each other for a specific country.</p>
+    </div>
+    
+    <div id="map" class="correlation-map"></div>
+    
+    <div class="correlation-form-container">
+        <form id="correlation_form" action="/correlations/analyze" method="post" class="text-center">
+            <div class="correlation-form-group">
+                <label for="country">Country Code (ISO3):</label>
+                <input type="text" id="country" name="country" placeholder="USA, GBR, DEU, etc." class="dark-input" required>
+            </div>
+            
+            <div class="correlation-form-row">
+                <div class="correlation-form-group">
+                    <label for="start_year">Start Year:</label>
+                    <input type="number" id="start_year" name="start_year" value="1960" min="1960" max="{{ current_year }}" class="dark-input" required>
+                </div>
+                
+                <div class="correlation-form-group">
+                    <label for="end_year">End Year:</label>
+                    <input type="number" id="end_year" name="end_year" value="{{ current_year }}" min="1960" max="{{ current_year }}" class="dark-input" required>
+                </div>
+            </div>
+            
+            <div class="correlation-form-row">
+                <div class="correlation-form-group">
+                    <label for="indicator1">First Indicator:</label>
+                    <select id="indicator1" name="indicator1" class="dark-input" required>
+                        <option value="" disabled selected>Select indicator</option>
+                        {% for indicator in valid_indicators | sort %}
+                            <option value="{{ indicator }}">{{ indicator.replace('_', ' ').title() }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="correlation-form-group">
+                    <label for="indicator2">Second Indicator:</label>
+                    <select id="indicator2" name="indicator2" class="dark-input" required>
+                        <option value="" disabled selected>Select indicator</option>
+                        {% for indicator in valid_indicators | sort %}
+                            <option value="{{ indicator }}">{{ indicator.replace('_', ' ').title() }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <div class="correlation-form-group">
+                <button type="submit" class="btn btn-primary">Analyze Correlation</button>
+            </div>
+        </form>
+    </div>
+    
+    <div class="correlation-info">
+        <h3>About Correlation Analysis</h3>
+        <p>Correlation analysis measures the statistical relationship between two variables. The correlation coefficient ranges from -1 to 1:</p>
+        <ul>
+            <li><strong>1</strong>: Perfect positive correlation (as one variable increases, the other increases proportionally)</li>
+            <li><strong>0</strong>: No correlation (variables are not related)</li>
+            <li><strong>-1</strong>: Perfect negative correlation (as one variable increases, the other decreases proportionally)</li>
+        </ul>
+        <p>This tool helps you understand relationships between economic indicators, such as:</p>
+        <ul>
+            <li>How GDP growth relates to unemployment rates</li>
+            <li>The relationship between inflation and interest rates</li>
+            <li>How foreign investment correlates with GDP per capita</li>
+        </ul>
+    </div>
+    
+    <div class="text-center" style="margin-top: 1.5em;">
+        <a href="/map" class="btn btn-primary">Back to Map</a>
+        <a href="/" class="btn btn-primary">Home</a>
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    // Initialize the map
+    const map = L.map('map', {
+        minZoom: 2,  // Prevent zooming out too far
+        maxZoom: 4,  // Limit maximum zoom
+        maxBoundsViscosity: 1.0,  // Make bounds "sticky"
+        maxBounds: [[-60, -160], [85, 160]]  // Restrict panning to avoid duplicate Russia
+    }).setView([30, 0], 3); // center of the world
+
+    // Add OpenStreetMap tiles
+    let currentTheme = 'dark_all';
+    let tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+    
+    // Highlight feature functions
+    function highlightFeature(e) {
+        const layer = e.target;
+        layer.setStyle({
+            weight: 2,
+            color: '#f0f',
+            fillOpacity: 0.3
+        });
+        layer.bringToFront();
+    }
+
+    function resetHighlight(e) {
+        if (geojson) {
+            geojson.resetStyle(e.target);
+        }
+    }
+
+    function onEachFeature(feature, layer) {
+        layer.on({
+            mouseover: highlightFeature,
+            mouseout: resetHighlight
+        });
+    }
+
+    let geojson;
+    fetch("https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson")
+        .then(res => res.json())
+        .then(data => {
+            geojson = L.geoJson(data, {
+                style: {
+                    fillColor: '#444',
+                    weight: 1,
+                    color: '#888',
+                    fillOpacity: 0.01
+                },
+                onEachFeature: onEachFeature
+            }).addTo(map);
+        });
+
+    map.on('click', function(e) {
+        const { lat, lng } = e.latlng;
+
+        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.address && data.address.country_code) {
+                    const countryCode = data.address.country_code.toUpperCase();
+                    document.getElementById('country').value = countryCode;
+                }
+            })
+            .catch(err => {
+                console.error('Error fetching country data:', err);
+            });
+    });
+
+    // Prevent selecting the same indicator twice
+    document.getElementById('indicator1').addEventListener('change', function() {
+        const indicator2 = document.getElementById('indicator2');
+        const options = indicator2.querySelectorAll('option');
+        
+        options.forEach(option => {
+            if (option.value === this.value) {
+                option.disabled = true;
+            } else if (option.value) {
+                option.disabled = false;
+            }
+        });
+    });
+    
+    document.getElementById('indicator2').addEventListener('change', function() {
+        const indicator1 = document.getElementById('indicator1');
+        const options = indicator1.querySelectorAll('option');
+        
+        options.forEach(option => {
+            if (option.value === this.value) {
+                option.disabled = true;
+            } else if (option.value) {
+                option.disabled = false;
+            }
+        });
+    });
+</script>
+{% endblock %}

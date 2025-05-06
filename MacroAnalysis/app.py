@@ -1,8 +1,11 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 import requests
 import os
-from datetime import datetime
+import json
+from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor
+import numpy as np
+import pycountry
 
 app = Flask(__name__)
 # Codes for the World Bank API. It's made in a way new ones can be added anytime.
@@ -73,48 +76,20 @@ forecast_supported_indicators = {
     "gdp_growth": "NGDP_RPCH"     # Real GDP growth (Annual percent change)
 }
 
-# Comprehensive ISO2 to ISO3 country code mapping
-country_codes = {
-    'AF': 'AFG', 'AX': 'ALA', 'AL': 'ALB', 'DZ': 'DZA', 'AS': 'ASM', 'AD': 'AND', 'AO': 'AGO',
-    'AI': 'AIA', 'AQ': 'ATA', 'AG': 'ATG', 'AR': 'ARG', 'AM': 'ARM', 'AW': 'ABW', 'AU': 'AUS',
-    'AT': 'AUT', 'AZ': 'AZE', 'BS': 'BHS', 'BH': 'BHR', 'BD': 'BGD', 'BB': 'BRB', 'BY': 'BLR',
-    'BE': 'BEL', 'BZ': 'BLZ', 'BJ': 'BEN', 'BM': 'BMU', 'BT': 'BTN', 'BO': 'BOL', 'BA': 'BIH',
-    'BW': 'BWA', 'BV': 'BVT', 'BR': 'BRA', 'IO': 'IOT', 'BN': 'BRN', 'BG': 'BGR', 'BF': 'BFA',
-    'BI': 'BDI', 'KH': 'KHM', 'CM': 'CMR', 'CA': 'CAN', 'CV': 'CPV', 'KY': 'CYM', 'CF': 'CAF',
-    'TD': 'TCD', 'CL': 'CHL', 'CN': 'CHN', 'CX': 'CXR', 'CC': 'CCK', 'CO': 'COL', 'KM': 'COM',
-    'CG': 'COG', 'CD': 'COD', 'CK': 'COK', 'CR': 'CRI', 'CI': 'CIV', 'HR': 'HRV', 'CU': 'CUB',
-    'CY': 'CYP', 'CZ': 'CZE', 'DK': 'DNK', 'DJ': 'DJI', 'DM': 'DMA', 'DO': 'DOM', 'EC': 'ECU',
-    'EG': 'EGY', 'SV': 'SLV', 'GQ': 'GNQ', 'ER': 'ERI', 'EE': 'EST', 'ET': 'ETH', 'FK': 'FLK',
-    'FO': 'FRO', 'FJ': 'FJI', 'FI': 'FIN', 'FR': 'FRA', 'GF': 'GUF', 'PF': 'PYF', 'TF': 'ATF',
-    'GA': 'GAB', 'GM': 'GMB', 'GE': 'GEO', 'DE': 'DEU', 'GH': 'GHA', 'GI': 'GIB', 'GR': 'GRC',
-    'GL': 'GRL', 'GD': 'GRD', 'GP': 'GLP', 'GU': 'GUM', 'GT': 'GTM', 'GG': 'GGY', 'GN': 'GIN',
-    'GW': 'GNB', 'GY': 'GUY', 'HT': 'HTI', 'HM': 'HMD', 'VA': 'VAT', 'HN': 'HND', 'HK': 'HKG',
-    'HU': 'HUN', 'IS': 'ISL', 'IN': 'IND', 'ID': 'IDN', 'IR': 'IRN', 'IQ': 'IRQ', 'IE': 'IRL',
-    'IM': 'IMN', 'IL': 'ISR', 'IT': 'ITA', 'JM': 'JAM', 'JP': 'JPN', 'JE': 'JEY', 'JO': 'JOR',
-    'KZ': 'KAZ', 'KE': 'KEN', 'KI': 'KIR', 'KP': 'PRK', 'KR': 'KOR', 'KW': 'KWT', 'KG': 'KGZ',
-    'LA': 'LAO', 'LV': 'LVA', 'LB': 'LBN', 'LS': 'LSO', 'LR': 'LBR', 'LY': 'LBY', 'LI': 'LIE',
-    'LT': 'LTU', 'LU': 'LUX', 'MO': 'MAC', 'MK': 'MKD', 'MG': 'MDG', 'MW': 'MWI', 'MY': 'MYS',
-    'MV': 'MDV', 'ML': 'MLI', 'MT': 'MLT', 'MH': 'MHL', 'MQ': 'MTQ', 'MR': 'MRT', 'MU': 'MUS',
-    'YT': 'MYT', 'MX': 'MEX', 'FM': 'FSM', 'MD': 'MDA', 'MC': 'MCO', 'MN': 'MNG', 'ME': 'MNE',
-    'MS': 'MSR', 'MA': 'MAR', 'MZ': 'MOZ', 'MM': 'MMR', 'NA': 'NAM', 'NR': 'NRU', 'NP': 'NPL',
-    'NL': 'NLD', 'NC': 'NCL', 'NZ': 'NZL', 'NI': 'NIC', 'NE': 'NER', 'NG': 'NGA', 'NU': 'NIU',
-    'NF': 'NFK', 'MP': 'MNP', 'NO': 'NOR', 'OM': 'OMN', 'PK': 'PAK', 'PW': 'PLW', 'PS': 'PSE',
-    'PA': 'PAN', 'PG': 'PNG', 'PY': 'PRY', 'PE': 'PER', 'PH': 'PHL', 'PN': 'PCN', 'PL': 'POL',
-    'PT': 'PRT', 'PR': 'PRI', 'QA': 'QAT', 'RE': 'REU', 'RO': 'ROU', 'RU': 'RUS', 'RW': 'RWA',
-    'BL': 'BLM', 'SH': 'SHN', 'KN': 'KNA', 'LC': 'LCA', 'MF': 'MAF', 'PM': 'SPM', 'VC': 'VCT',
-    'WS': 'WSM', 'SM': 'SMR', 'ST': 'STP', 'SA': 'SAU', 'SN': 'SEN', 'RS': 'SRB', 'SC': 'SYC',
-    'SL': 'SLE', 'SG': 'SGP', 'SK': 'SVK', 'SI': 'SVN', 'SB': 'SLB', 'SO': 'SOM', 'ZA': 'ZAF',
-    'GS': 'SGS', 'ES': 'ESP', 'LK': 'LKA', 'SD': 'SDN', 'SR': 'SUR', 'SJ': 'SJM', 'SZ': 'SWZ',
-    'SE': 'SWE', 'CH': 'CHE', 'SY': 'SYR', 'TW': 'TWN', 'TJ': 'TJK', 'TZ': 'TZA', 'TH': 'THA',
-    'TL': 'TLS', 'TG': 'TGO', 'TK': 'TKL', 'TO': 'TON', 'TT': 'TTO', 'TN': 'TUN', 'TR': 'TUR',
-    'TM': 'TKM', 'TC': 'TCA', 'TV': 'TUV', 'UG': 'UGA', 'UA': 'UKR', 'AE': 'ARE', 'GB': 'GBR',
-    'US': 'USA', 'UM': 'UMI', 'UY': 'URY', 'UZ': 'UZB', 'VU': 'VUT', 'VE': 'VEN', 'VN': 'VNM',
-    'VG': 'VGB', 'VI': 'VIR', 'WF': 'WLF', 'EH': 'ESH', 'YE': 'YEM', 'ZM': 'ZMB', 'ZW': 'ZWE',
-}
+def convert_iso2_to_iso3(iso2_code):
+    """Convert ISO2 country code to ISO3 country code using pycountry."""
+    try:
+        # Try to look up by alpha_2 (ISO2)
+        country = pycountry.countries.get(alpha_2=iso2_code.upper())
+        if country:
+            return country.alpha_3
+    except (KeyError, AttributeError):
+        pass
+    
+    # If the lookup fails or if the code is already ISO3, return it as is
+    return iso2_code.upper()
 
-def get_imf_country_code(iso2_code):
-    # Convert 2-letter country codes to 3-letter IMF codes using a comprehensive mapping.
-    return country_codes.get(iso2_code.upper(), iso2_code)
+
 
 @app.route('/favicon.ico')
 def favicon():
@@ -170,8 +145,95 @@ def get_imf_forecast_data(indicator, country_iso3):
     except Exception:
         return {}
 
+# Cache directory for storing rankings
+RANKINGS_CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cache', 'rankings')
+
+# Ensure cache directory exists
+os.makedirs(RANKINGS_CACHE_DIR, exist_ok=True)
+
+def get_cached_rankings(indicator, year):
+    """Get rankings from cache if available and not expired."""
+    cache_file = os.path.join(RANKINGS_CACHE_DIR, f'{indicator}_{year}.json')
+    
+    # Check if cache file exists and is not older than 30 days
+    if os.path.exists(cache_file):
+        file_modified_time = datetime.fromtimestamp(os.path.getmtime(cache_file))
+        if datetime.now() - file_modified_time < timedelta(days=30):
+            try:
+                with open(cache_file, 'r') as f:
+                    return json.load(f)
+            except Exception as e:
+                print(f"Error reading cache file: {e}")
+    
+    return None
+
+def save_rankings_to_cache(indicator, year, rankings):
+    """Save rankings to cache."""
+    cache_file = os.path.join(RANKINGS_CACHE_DIR, f'{indicator}_{year}.json')
+    try:
+        with open(cache_file, 'w') as f:
+            json.dump(rankings, f)
+    except Exception as e:
+        print(f"Error saving to cache: {e}")
+
+def get_global_data(indicator, year):
+    """Get global data for an indicator for a specific year to calculate rankings."""
+    # Try to get from cache first
+    cached_rankings = get_cached_rankings(indicator, year)
+    if cached_rankings:
+        return cached_rankings
+        
+    try:
+        # Get data for all countries
+        url = f"http://api.worldbank.org/v2/country/all/indicator/{codes[indicator]}?format=json&date={year}"
+        wb_response = requests.get(url, headers={"User-Agent": "MacroAnalysis"}, timeout=10)
+        
+        if wb_response.status_code == 200:
+            response = wb_response.json()
+            
+            # Check if we have pagination and need to get more pages
+            total_pages = response[0]['pages'] if isinstance(response, list) and len(response) > 0 else 1
+            all_data = response[1] if isinstance(response, list) and len(response) > 1 else []
+            
+            # Get additional pages if needed (usually won't be more than 2-3 pages)
+            for page in range(2, total_pages + 1):
+                url = f"http://api.worldbank.org/v2/country/all/indicator/{codes[indicator]}?format=json&date={year}&page={page}"
+                page_response = requests.get(url, headers={"User-Agent": "MacroAnalysis"}, timeout=10)
+                if page_response.status_code == 200:
+                    page_data = page_response.json()
+                    if isinstance(page_data, list) and len(page_data) > 1:
+                        all_data.extend(page_data[1])
+            
+            # Filter out entries with no value and sort
+            valid_data = [item for item in all_data if item["value"] is not None]
+            
+            # For most indicators, higher is better, but for some, lower is better
+            reverse_order = indicator not in ["unemployment", "inflation", "poverty_rate", "gini_index", "debt", "imports_gdp"]
+            
+            # Sort data based on indicator value
+            sorted_data = sorted(valid_data, key=lambda x: x["value"], reverse=reverse_order)
+            
+            # Create ranking dictionary
+            rankings = {}
+            for i, item in enumerate(sorted_data):
+                country_code = item["countryiso3code"]
+                if country_code:
+                    rankings[country_code] = {
+                        "rank": i + 1,
+                        "total": len(sorted_data),
+                        "value": item["value"]
+                    }
+            
+            # Save to cache for future use
+            save_rankings_to_cache(indicator, year, rankings)
+            return rankings
+        
+        return {}
+    except Exception as e:
+        return {}
+
 def get_data(indicator, country_code, years):
-    # Get historical and forecast data for a specific indicator and country.
+    """Get historical and forecast data for a specific indicator and country."""
     
     try:
         values = {}
@@ -189,17 +251,40 @@ def get_data(indicator, country_code, years):
                     year = int(item["date"])
                     value = item["value"]
                     if value is not None:
-                        values[year] = {"value": value, "type": "historical"}
-        
+                        values[year] = {
+                            "value": value, 
+                            "type": "historical"
+                        }
         # Get forecast data from IMF if available
         if indicator in forecast_supported_indicators:
-            imf_country_code = get_imf_country_code(country_code)
+            imf_country_code = convert_iso2_to_iso3(country_code)
             forecast_data = get_imf_forecast_data(forecast_supported_indicators[indicator], imf_country_code)
             if forecast_data:
+                # Add empty ranking data for forecast values
+                for year, data in forecast_data.items():
+                    data["ranking"] = {}
                 values.update(forecast_data)
             
+        # Now add ranking data only for the latest year with data
+        historical_years = [year for year, data in values.items() if data["type"] == "historical"]
+        if historical_years:
+            latest_year = max(historical_years)
+            ranking_data = {}
+            global_data = get_global_data(indicator, latest_year)
+            # Convert ISO2 to ISO3 country code if needed
+            iso3_code = convert_iso2_to_iso3(country_code)
+            
+            if iso3_code in global_data:
+                ranking_data = global_data[iso3_code]
+            elif country_code in global_data:
+                ranking_data = global_data[country_code]
+                
+            # Add ranking data if available
+            if ranking_data:
+                values[latest_year]["ranking"] = ranking_data
+        
         return values
-    except Exception:
+    except Exception as e:
         return {}
 
 @app.route("/")
@@ -224,12 +309,8 @@ def country():
 
         # handling misinputs
         if not country or not start_year or not end_year:
-            print(country, start_year, end_year)
-            print("error 1")
             return redirect("/map")
         if not start_year.isdigit() or not end_year.isdigit():
-            print(start_year, end_year)
-            print("error 2")
             return redirect("/map")
         if not indicators:
             indicators = ["gdp", "gdp_per_capita", "gdp_growth", "inflation", "unemployment"]
@@ -260,12 +341,20 @@ def country():
                 for year in years:
                     if year in values:
                         data = values[year]
-                        results[indicator].append({
+                        result_item = {
                             "year": year,
                             "value": data["value"],
                             "type": data["type"]
-                        })
+                        }
+                        
+                        # Add ranking data if available
+                        if "ranking" in data and data["ranking"]:
+                            result_item["ranking"] = data["ranking"]
+                            
+                        results[indicator].append(result_item)
 
+        # All data is ready for the template
+        
         return render_template("country.html", country=country, indicators=indicators, data_series=results, years=years)
     else:
         return redirect("/map")
@@ -326,16 +415,118 @@ def compare_countries():
                 for year in years:
                     if year in values:
                         data = values[year]
-                        data_series[country_code][indicator].append({
+                        result_item = {
                             "year": year,
                             "value": data["value"],
                             "type": data["type"]
-                        })
+                        }
+                        
+                        # Add ranking data if available
+                        if "ranking" in data and data["ranking"]:
+                            result_item["ranking"] = data["ranking"]
+                            
+                        data_series[country_code][indicator].append(result_item)
 
         return render_template("compare_countries.html", countries=countries, indicators=indicators, data_series=data_series, years=years)
     else:
         return redirect("/compare")
 
+@app.route("/correlations", methods=["GET"])
+def correlations():
+    return render_template("correlations.html", valid_indicators=codes.keys(), current_year=datetime.now().year)
+
+@app.route("/correlations/analyze", methods=["POST"])
+def analyze_correlations():
+    country = request.form.get("country")
+    start_year = request.form.get("start_year")
+    end_year = request.form.get("end_year")
+    indicator1 = request.form.get("indicator1")
+    indicator2 = request.form.get("indicator2")
+    
+    # Validate inputs
+    if not country or not start_year or not end_year or not indicator1 or not indicator2:
+        return redirect("/correlations")
+    if not start_year.isdigit() or not end_year.isdigit():
+        return redirect("/correlations")
+    if indicator1 == indicator2:
+        return redirect("/correlations")
+        
+    start_year = int(start_year)
+    end_year = int(end_year)
+    country_code = country.upper()
+    
+    # Get data for both indicators
+    years = list(range(start_year, end_year + 1))
+    
+    with ThreadPoolExecutor() as executor:
+        futures = {
+            executor.submit(get_data, indicator1, country_code, years): indicator1,
+            executor.submit(get_data, indicator2, country_code, years): indicator2
+        }
+        
+        results = {
+            indicator1: [],
+            indicator2: []
+        }
+        
+        for future in futures:
+            indicator = futures[future]
+            values = future.result()
+            for year in years:
+                if year in values:
+                    data = values[year]
+                    results[indicator].append({
+                        "year": year,
+                        "value": data["value"],
+                        "type": data["type"]
+                    })
+    
+    # Calculate correlation
+    # First, align the data points by year
+    aligned_data = {}
+    for year in years:
+        aligned_data[year] = {"indicator1": None, "indicator2": None}
+    
+    for data_point in results[indicator1]:
+        aligned_data[data_point["year"]]["indicator1"] = data_point["value"]
+        
+    for data_point in results[indicator2]:
+        aligned_data[data_point["year"]]["indicator2"] = data_point["value"]
+    
+    # Filter out years where either indicator is missing
+    filtered_data = {year: values for year, values in aligned_data.items() 
+                    if values["indicator1"] is not None and values["indicator2"] is not None}
+    
+    # Calculate correlation coefficient if we have enough data points
+    correlation = None
+    scatter_data = []
+    
+    if len(filtered_data) > 1:
+        x_values = []
+        y_values = []
+        
+        for year, values in filtered_data.items():
+            x_values.append(values["indicator1"])
+            y_values.append(values["indicator2"])
+            scatter_data.append({
+                "year": year,
+                "x": values["indicator1"],
+                "y": values["indicator2"]
+            })
+        
+        # Calculate correlation coefficient
+        if len(x_values) > 1:
+            correlation = np.corrcoef(x_values, y_values)[0, 1]
+    
+    return render_template("correlation_results.html", 
+                           country=country, 
+                           indicator1=indicator1, 
+                           indicator2=indicator2, 
+                           correlation=correlation,
+                           scatter_data=scatter_data,
+                           years=sorted(filtered_data.keys()))
+
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(debug=False, host="0.0.0.0", port=port)
+    #port = int(os.environ.get("PORT", 5000))
+    #app.run(debug=False, host="0.0.0.0", port=port)
+    app.run(debug=True)

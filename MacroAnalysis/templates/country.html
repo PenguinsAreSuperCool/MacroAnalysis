@@ -18,6 +18,7 @@
 
     <div class="text-center" style="margin-top: 1.5em;">
         <button id="toggle-layout" class="btn btn-secondary">Switch to Grid View</button>
+        <a href="/correlations" class="btn btn-primary">Indicator Correlations</a>
         <a href="/compare" class="btn btn-primary">Compare Countries</a>
         <a href="/map" class="btn btn-primary">Back to Map</a>
         <a href="/" class="btn btn-primary">Home</a>
@@ -34,10 +35,27 @@
         const {{ indicator }}_historical = { x: [], y: [] };
         const {{ indicator }}_forecast = { x: [], y: [] };
  
+        // Track if we have ranking data to display
+        let hasRanking_{{ indicator }} = false;
+        let latestRankingYear_{{ indicator }} = null;
+        let latestRanking_{{ indicator }} = null;
+        
+
+        
         {{ indicator }}_full_data.forEach(point => {
             if (point.type === 'historical') {
                 {{ indicator }}_historical.x.push(point.year);
                 {{ indicator }}_historical.y.push(point.value);
+                
+                // Check if this point has ranking data
+                if (point.ranking && Object.keys(point.ranking).length > 0) {
+                    hasRanking_{{ indicator }} = true;
+                    // Keep track of the latest year with ranking data
+                    if (!latestRankingYear_{{ indicator }} || point.year > latestRankingYear_{{ indicator }}) {
+                        latestRankingYear_{{ indicator }} = point.year;
+                        latestRanking_{{ indicator }} = point.ranking;
+                    }
+                }
             } else if (point.type === 'forecast') {
                 {{ indicator }}_forecast.x.push(point.year);
                 {{ indicator }}_forecast.y.push(point.value);
@@ -46,7 +64,7 @@
 
         const layout_{{ indicator }} = {
             title: { 
-                text: '{{ indicator.replace("_", " ").title() }} of {{ country }}', 
+                text: '{{ indicator | replace("_", " ") | title }} of {{ country }}', 
                 font: { color: 'white' } 
             },
             xaxis: { 
@@ -65,8 +83,35 @@
             scrollZoom: false,  // Disable mousewheel zoom
             hovermode: 'closest',
             staticPlot: true,  // This will completely disable all mouse interactions
-            margin: { t: 50, b: 50, l: 50, r: 50 }
+            margin: { t: 50, b: 50, l: 50, r: 50 },
+            autosize: true,
+            annotations: []
         };
+
+        // Add ranking annotation if available
+        if (hasRanking_{{ indicator }} && latestRanking_{{ indicator }}) {
+            const rankText_{{ indicator }} = `Global Rank: #${latestRanking_{{ indicator }}.rank} of ${latestRanking_{{ indicator }}.total} (${latestRankingYear_{{ indicator }}})`;
+            layout_{{ indicator }}.annotations.push({
+                x: 0.05,
+                y: 0.95,
+                xref: 'paper',
+                yref: 'paper',
+                text: rankText_{{ indicator }},
+                showarrow: false,
+                font: {
+                    family: 'Arial',
+                    size: 14,
+                    color: 'white'
+                },
+                align: 'left',
+                xanchor: 'left',
+                yanchor: 'top',
+                bgcolor: 'rgba(147,112,219,0.7)',
+                bordercolor: '#9370DB',
+                borderwidth: 1,
+                borderpad: 6
+            });
+        }
 
         Plotly.newPlot('graph_{{ indicator }}', [
             {
