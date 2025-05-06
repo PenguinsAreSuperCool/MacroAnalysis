@@ -35,11 +35,27 @@
         traces = [];
  
         const layout_{{ indicator }} = {
-            title: { text: '{{ indicator.replace("_", " ").title() }} Comparison', font: { color: 'white' } },
-            xaxis: { title: 'Year', color: 'white' },
-            yaxis: { title: 'Value', color: 'white' },
+            title: { 
+                text: '{{ indicator.replace("_", " ").title() }} Comparison', 
+                font: { color: 'white' } 
+            },
+            xaxis: { 
+                title: 'Year', 
+                color: 'white',
+                showgrid: false
+            },
+            yaxis: { 
+                title: 'Value', 
+                color: 'white',
+                showgrid: false
+            },
             paper_bgcolor: 'black',
-            plot_bgcolor: 'black'
+            plot_bgcolor: 'black',
+            dragmode: false,  // Disable zoom/pan
+            scrollZoom: false,  // Disable mousewheel zoom
+            hovermode: 'closest',
+            staticPlot: true,  // This will completely disable all mouse interactions
+            margin: { t: 50, b: 50, l: 50, r: 50 }
         };
 
  

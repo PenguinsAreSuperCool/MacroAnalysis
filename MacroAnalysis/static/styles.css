@@ -29,6 +29,15 @@ body {
     margin: 0;
     padding: 0;
 }
+
+.dark-input {
+    background-color: black !important;
+    color: white !important;
+    padding: 8px !important;
+    border: 1px solid #444 !important;
+    border-radius: 4px !important;
+    min-width: 120px;
+}
 label {
     color: white;
 }
@@ -69,14 +78,14 @@ form {
 }
 
 #country_search {
-    flex: 1;
-    min-width: 200px;
+    width: 80%;
+    min-width: 300px;
+    max-width: 800px;
     padding: 0.8em;
     border-radius: 5px;
-    border: 1px solid #a78bfa;
-    background: rgba(26, 26, 26, 0.95);
+    background-color: black;
     color: white;
-    font-size: 1rem;
+    border: 1px solid #444;
 }
 
 .search-button {
@@ -612,3 +621,10 @@ blockquote {
         width: 100%;
     }
 }
+
+#selected-countries {
+    margin: 20px auto; 
+    max-width: 600px;
+    text-align: center;
+}
+

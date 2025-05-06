@@ -22,13 +22,13 @@
                 <input type="hidden" name="country9" id="country9">
                 <input type="hidden" name="country10" id="country10">
                 <label for="start_year">Start Year:</label>
-                <input type="number" id="start_year" name="start_year" value="1960">
+                <input type="number" id="start_year" name="start_year" value="1960" min="1960" max="{{ current_year }}" class="dark-input">
                 <label for="end_year">End Year:</label>
-                <input type="number" id="end_year" name="end_year" value="{{ current_year }}">
-                <details style="color: white; margin-top: 10px;">
+                <input type="number" id="end_year" name="end_year" value="{{ current_year }}" min="1960" max="{{ current_year }}" class="dark-input">
+                <details>
                     <summary>Select data to display:</summary>
-                    <div style="margin: 10px 0;">
-                        <input type="text" id="indicatorSearch" placeholder="Search indicators..." style="width: 100%; padding: 5px;">
+                    <div class="indicator-search-container">
+                        <input type="text" id="indicatorSearch" placeholder="Search indicators...">
                     </div>
                     <div class="indicator-grid" id="indicatorList">
                         {% for indicator in valid_indicators | sort %}
@@ -44,17 +44,15 @@
                 </div>
             </form>
         </div>
-        <div id="selected-countries" style="margin: 20px auto; max-width: 600px; text-align: center;"></div>
+        <div id="selected-countries"></div>
         <div id="map" class="compare-map"></div>
 
         <div class="button-search">
             <label for="country_search">Or search for a country:</label>
-            <input type="text" id="country_search" placeholder="Type country name" style="width: 60%; padding: 0.4em; border-radius: 5px;">
+            <input type="text" id="country_search" placeholder="Type country name">
             <button type="button" onclick="searchCountry()" class="btn btn-secondary" style="margin-left: 0.5em;">Select</button>
         </div>
-        <div class="text-center" style="margin-bottom: 10px;">
-            <button onclick="toggleMapTheme()" class="btn btn-secondary">I make dubious choices</button>
-        </div>
+
         <div class="text-center">
             <a href="/map" class="btn btn-primary">Back to Map</a>
             <a href="/" class="btn btn-primary">Home</a>
@@ -63,7 +61,12 @@
 
     <script>
     // Initialize the map
-    const map = L.map('map').setView([20, 0], 3); // center of the world
+    const map = L.map('map', {
+        minZoom: 2,  // Prevent zooming out too far
+        maxZoom: 4,  // Limit maximum zoom
+        maxBoundsViscosity: 1.0,  // Make bounds "sticky"
+        maxBounds: [[-60, -160], [85, 160]]  // Restrict panning to avoid duplicate Russia
+    }).setView([30, 0], 3); // center of the world
 
     // Add OpenStreetMap tiles
     let currentTheme = 'dark_all';
