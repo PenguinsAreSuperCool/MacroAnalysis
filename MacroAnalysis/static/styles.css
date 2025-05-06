@@ -465,6 +465,10 @@ blockquote {
     color: white;
 }
 
+.metric-card h3 {
+    color: #4c2a9c;
+}
+
 .indicator-desc {
     color: #e5e5e5;
     font-size: 0.9rem;
