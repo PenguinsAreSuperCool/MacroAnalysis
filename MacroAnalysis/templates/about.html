@@ -4,15 +4,12 @@
     About
 {% endblock %}
 {% block main %}
-<video autoplay muted loop playsinline id="bg-video">
-    <source src="{{ url_for('static', filename='background2.mp4') }}" type="video/mp4">
-</video>
 <div class="about_text home-body">
     <div class="about-container">
     <h1><a href="/" class="title-link">MacroAnalysis</a></h1>
     <p>
         MacroAnalysis is a CS50 final project designed to allow users to easily see and compare almost every major macroeconomic indicator for nearly every country in the world.
-        All data is directly from the World Bank. Forecasts (currently disable because of resource constraints) are from the IMF.
+        All data is directly from the World Bank. Forecasts are from the IMF.
     </p>
 
     <h2>Key Features</h2>
@@ -22,6 +19,7 @@
         <li>⚖️ Support for comparing multiple indicators and countries ⚖️</li>
         <li>🌑 Dark-themed UI, as that should be the default 🌑 </li>
         <li>📡 Real-time economic data 📡</li>
+        <li>📉Forecasting📉</li>
     </ul>
 
     <h2>About the Creator</h2>
