@@ -112,22 +112,6 @@
                 }
             });
     });
-
-    function toggleMapTheme() {
-        map.removeLayer(tileLayer);
-        if (currentTheme === 'dark_all') {
-            currentTheme = 'voyager';
-            tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-                attribution: '© OpenStreetMap contributors'
-            }).addTo(map);
-        } else {
-            currentTheme = 'dark_all';
-            tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                attribution: '© OpenStreetMap contributors'
-            }).addTo(map);
-        }
-    }
-    
     
     function searchCountry() {
         const query = document.getElementById('country_search').value;

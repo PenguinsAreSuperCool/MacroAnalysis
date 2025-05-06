@@ -16,8 +16,9 @@
     <div class="correlation-form-container">
         <form id="correlation_form" action="/correlations/analyze" method="post" class="text-center">
             <div class="correlation-form-group">
-                <label for="country">Country Code (ISO3):</label>
-                <input type="text" id="country" name="country" placeholder="USA, GBR, DEU, etc." class="dark-input" required>
+                <label for="country">Country:</label>
+                <input type="text" id="country_search" placeholder="Type country name" class="dark-input" required>
+                <input type="hidden" id="country" name="country">
             </div>
             
             <div class="correlation-form-row">
@@ -137,19 +138,51 @@
             }).addTo(map);
         });
 
+    // Country search functionality
+    document.getElementById('country_search').addEventListener('input', function() {
+        // Auto-submit search after typing stops
+        clearTimeout(this.debounceTimer);
+        this.debounceTimer = setTimeout(() => {
+            const query = this.value;
+            if (query.length < 2) return; // Don't search for very short queries
+            
+            fetch(`https://nominatim.openstreetmap.org/search?country=${encodeURIComponent(query)}&format=json&limit=1`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.length > 0) {
+                        const { lat, lon } = data[0];
+                        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`)
+                            .then(res => res.json())
+                            .then(reverseData => {
+                                const countryCode = reverseData.address.country_code.toUpperCase();
+                                if (countryCode) {
+                                    document.getElementById('country').value = countryCode;
+                                }
+                            });
+                    }
+                })
+                .catch(error => console.error('Error searching for country:', error));
+        }, 500); // 500ms debounce
+    });
+    
+    // Validate form before submission
+    document.getElementById('correlation_form').addEventListener('submit', function(e) {
+        if (!document.getElementById('country').value) {
+            e.preventDefault();
+            alert('Please select a valid country from the search');
+        }
+    });
+
     map.on('click', function(e) {
         const { lat, lng } = e.latlng;
 
         fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
             .then(res => res.json())
             .then(data => {
-                if (data.address && data.address.country_code) {
-                    const countryCode = data.address.country_code.toUpperCase();
-                    document.getElementById('country').value = countryCode;
-                }
-            })
-            .catch(err => {
-                console.error('Error fetching country data:', err);
+                const countryCode = data.address.country_code.toUpperCase();
+                const countryName = data.address.country;
+                document.getElementById('country').value = countryCode;
+                document.getElementById('country_search').value = countryName;
             });
     });
 

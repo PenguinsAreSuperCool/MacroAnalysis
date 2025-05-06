@@ -453,7 +453,9 @@ def analyze_correlations():
         
     start_year = int(start_year)
     end_year = int(end_year)
-    country_code = country.upper()
+    
+    # Convert country code if needed (handles both ISO2 and ISO3)
+    country_code = convert_iso2_to_iso3(country.upper())
     
     # Get data for both indicators
     years = list(range(start_year, end_year + 1))
