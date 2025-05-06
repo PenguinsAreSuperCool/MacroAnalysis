@@ -465,25 +465,11 @@ blockquote {
     color: white;
 }
 
-.metric-card h4 {
-    margin-bottom: 0.5rem;
-    color: #4c2a9c;
-    font-size: 1.25rem;
-    font-weight: 600;
-}
-
 .indicator-desc {
     color: #e5e5e5;
     font-size: 0.9rem;
     margin-bottom: 1rem;
     line-height: 1.4;
-}
-
-.metric-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 28px rgba(167, 139, 250, 0.3);
-    border-color: rgba(167, 139, 250, 0.3);
-    background: rgba(38, 38, 38, 0.98);
 }
 
 .resources {
