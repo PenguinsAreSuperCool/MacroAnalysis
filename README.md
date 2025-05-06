@@ -30,8 +30,6 @@ The third leads to the youtube video explaning the usage (the same in the link a
 
 The fourth is an about page that talks about the creator and gives credit to the wonderful opportunities I received.
 
-The fifth and last leads the user to the scratch project I did in the week 0 of CS50. The project is a dancing game with multiple characters and increasing difficulty.
-
 The challenges of implementing this project was mainly the speed. Implementing ThreadPoolExecutor was crucial to make things speedy. 
 Adding forecasting was challenging because of different country codes and different behavior from the IMF API, but now it works! 
 

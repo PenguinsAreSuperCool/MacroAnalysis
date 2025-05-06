@@ -224,8 +224,12 @@ def country():
 
         # handling misinputs
         if not country or not start_year or not end_year:
+            print(country, start_year, end_year)
+            print("error 1")
             return redirect("/map")
         if not start_year.isdigit() or not end_year.isdigit():
+            print(start_year, end_year)
+            print("error 2")
             return redirect("/map")
         if not indicators:
             indicators = ["gdp", "gdp_per_capita", "gdp_growth", "inflation", "unemployment"]
@@ -333,6 +337,6 @@ def compare_countries():
         return redirect("/compare")
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(debug=False, host="0.0.0.0", port=port)
-    
+    # port = int(os.environ.get("PORT", 5000))
+    # app.run(debug=False, host="0.0.0.0", port=port)
+    app.run(debug=True)
