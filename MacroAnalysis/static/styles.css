@@ -48,10 +48,55 @@ form {
     object-fit: cover;
     pointer-events: none;
 }
+.search-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 0 20px;
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.search-input-group {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
 #country_search {
-    width: 60%; 
-    padding: 0.4em; 
+    flex: 1;
+    min-width: 200px;
+    padding: 0.8em;
     border-radius: 5px;
+    border: 1px solid #a78bfa;
+    background: rgba(26, 26, 26, 0.95);
+    color: white;
+    font-size: 1rem;
+}
+
+.search-button {
+    padding: 0.8em 1.5em;
+    white-space: nowrap;
+    min-width: 100px;
+}
+
+@media (max-width: 600px) {
+    .search-input-group {
+        flex-direction: column;
+    }
+
+    .search-button {
+        width: 100%;
+    }
+
+    #country_search {
+        width: 100%;
+    }
 }
 
 .home-container {
