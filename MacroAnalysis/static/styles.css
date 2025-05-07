@@ -810,3 +810,252 @@ blockquote {
     text-align: center;
 }
 
+/* Rankings page styles */
+.rankings-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.rankings-intro {
+    color: white;
+    margin: 1.5rem auto;
+    max-width: 800px;
+    text-align: center;
+}
+
+.rankings-form-container {
+    background: rgba(26, 26, 26, 0.95);
+    border-radius: 1rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(107, 70, 193, 0.2);
+    padding: 2rem;
+    margin: 2rem auto;
+    max-width: 800px;
+}
+
+.rankings-form-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 2rem;
+    margin-bottom: 1.5rem;
+}
+
+.rankings-form-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.rankings-info {
+    background: rgba(26, 26, 26, 0.95);
+    border-radius: 1rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(107, 70, 193, 0.2);
+    padding: 2rem;
+    margin: 2rem auto;
+    max-width: 800px;
+    color: white;
+}
+
+.rankings-info h3 {
+    color: #a78bfa;
+    margin-bottom: 1rem;
+}
+
+.rankings-info ul {
+    margin-left: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.rankings-info li {
+    margin-bottom: 0.5rem;
+}
+
+/* Rankings results styles */
+.rankings-results-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.rankings-results {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    margin: 2rem 0;
+}
+
+.rankings-table-container {
+    flex: 1;
+    min-width: 300px;
+    max-width: 600px;
+    background: rgba(26, 26, 26, 0.95);
+    border-radius: 1rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(107, 70, 193, 0.2);
+    padding: 1rem;
+    overflow-y: auto;
+    max-height: 600px;
+}
+
+.rankings-visualization {
+    flex: 1;
+    min-width: 300px;
+    height: 600px;
+    background: rgba(26, 26, 26, 0.95);
+    border-radius: 1rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(107, 70, 193, 0.2);
+    padding: 1rem;
+}
+
+.rankings-table {
+    width: 100%;
+    border-collapse: collapse;
+    color: white;
+}
+
+.rankings-table th {
+    background-color: rgba(107, 70, 193, 0.2);
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 2px solid rgba(107, 70, 193, 0.3);
+}
+
+.rankings-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.rankings-table tr:hover {
+    background-color: rgba(107, 70, 193, 0.1);
+}
+
+.rank-cell {
+    font-weight: bold;
+    color: #a78bfa;
+    text-align: center;
+}
+
+.country-cell {
+    font-weight: bold;
+}
+
+.value-cell {
+    text-align: right;
+}
+
+.country-link {
+    color: white;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.country-link:hover {
+    color: #a78bfa;
+    text-decoration: underline;
+}
+
+.data-source {
+    font-style: italic;
+    color: #888;
+    margin-top: 1rem;
+}
+
+/* Toggle switch styles */
+.toggle-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.toggle-label {
+    color: white;
+    font-weight: bold;
+}
+
+.mode-selector {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.mode-label {
+    color: white;
+    font-weight: bold;
+    margin-right: 10px;
+}
+
+.mode-options {
+    display: flex;
+    gap: 15px;
+    background-color: rgba(26, 26, 26, 0.95);
+    border: 1px solid rgba(107, 70, 193, 0.3);
+    border-radius: 8px;
+    padding: 8px 15px;
+}
+
+.mode-option {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    transition: all 0.2s ease;
+}
+
+.mode-option:hover {
+    background-color: rgba(107, 70, 193, 0.2);
+}
+
+.mode-option input[type="radio"] {
+    margin-right: 8px;
+    accent-color: #6b46c1;
+}
+
+.mode-option span {
+    font-size: 0.9rem;
+}
+
+.country-inputs {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.country-inputs > div {
+    flex: 1;
+    min-width: 250px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+@media (max-width: 768px) {
+    .rankings-form-row,
+    .rankings-results {
+        flex-direction: column;
+    }
+    
+    .toggle-switch {
+        width: 150px;
+    }
+    
+    .toggle-label-text:before {
+        width: 70px;
+    }
+    
+    .toggle-on, .toggle-off {
+        width: 70px;
+        font-size: 0.8rem;
+    }
+    
+    .toggle-input:checked + .toggle-label-text:before {
+        transform: translateX(70px);
+    }
+}

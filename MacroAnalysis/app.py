@@ -89,7 +89,21 @@ def convert_iso2_to_iso3(iso2_code):
     # If the lookup fails or if the code is already ISO3, return it as is
     return iso2_code.upper()
 
-
+def get_country_name(country_code):
+    try:
+        # Try as alpha-2 first
+        country = pycountry.countries.get(alpha_2=country_code)
+        if country:
+            return country.name
+        
+        # Try as alpha-3 if alpha-2 fails
+        country = pycountry.countries.get(alpha_3=country_code)
+        if country:
+            return country.name
+        
+        return country_code
+    except:
+        return country_code
 
 @app.route('/favicon.ico')
 def favicon():
@@ -205,24 +219,42 @@ def get_global_data(indicator, year):
                         all_data.extend(page_data[1])
             
             # Filter out entries with no value and sort
-            valid_data = [item for item in all_data if item["value"] is not None]
+            # Also filter out World Bank region and income group aggregates (non-country codes)
+            # These typically have 3-letter codes that aren't actual ISO3 country codes
+            # Common non-country codes: WLD (World), OED (OECD), EAS (East Asia), NAC (North America), etc.
+            non_country_codes = [
+                # World Bank region and income group aggregates
+                'WLD', 'OED', 'PST', 'IBT', 'IBD', 'LMY', 'MIC', 'EAS', 'NAC', 'LTE', 'ECS', 'EUU',
+                'HIC', 'LIC', 'SSF', 'SSA', 'TSA', 'MEA', 'LAC', 'ECA', 'ARB', 'CEB', 'CSS', 'EMU',
+                'UMC', 'LMC', 'FCS', 'OSS', 'SST', 'TEA', 'TEC', 'TLA', 'TMN', 'TSS',
+                'EAP', 'EAR', 'LCN', 'SAS', 'IDA', 'XKX', 'AFE', 'AFW', 'CAA', 'CLA', 'INX',
+                'MNA', 'MNE', 'MNP', 'TEU', 'TLA', 'TSA', 'TZA', 'AFR', 'XZN', 'XZJ', 'XZG',
+                'XK', 'AF', 'EA', 'LC', 'SA', 'ID', 'MN', 'TE', 'TL', 'TS', 'TZ'
+            ]
+            valid_data = [item for item in all_data if item["value"] is not None and item["countryiso3code"] not in non_country_codes]
+            # Sort data based on indicator value - highest values first for all indicators
+            sorted_data = sorted(valid_data, key=lambda x: x["value"], reverse=True)
             
-            # For most indicators, higher is better, but for some, lower is better
-            reverse_order = indicator not in ["unemployment", "inflation", "poverty_rate", "gini_index", "debt", "imports_gdp"]
-            
-            # Sort data based on indicator value
-            sorted_data = sorted(valid_data, key=lambda x: x["value"], reverse=reverse_order)
-            
-            # Create ranking dictionary
-            rankings = {}
-            for i, item in enumerate(sorted_data):
+            # Filter out non-country codes before creating rankings
+            # This ensures we only have actual countries in our sorted data
+            filtered_sorted_data = []
+            for item in sorted_data:
                 country_code = item["countryiso3code"]
-                if country_code:
-                    rankings[country_code] = {
-                        "rank": i + 1,
-                        "total": len(sorted_data),
-                        "value": item["value"]
-                    }
+                # Check if it's a real country code (not in our non-country list)
+                if country_code and country_code not in non_country_codes:
+                    # Also check for any 2-letter prefix that might indicate a region
+                    if not any(country_code.startswith(prefix) for prefix in ['X', 'Z', 'E', 'L', 'M', 'T', 'S']):
+                        filtered_sorted_data.append(item)
+            
+            # Create ranking dictionary with consecutive numbers
+            rankings = {}
+            for i, item in enumerate(filtered_sorted_data):
+                country_code = item["countryiso3code"]
+                rankings[country_code] = {
+                    "rank": i + 1,  # Start at 1 and increment consecutively
+                    "total": len(filtered_sorted_data),  # Total count of actual countries
+                    "value": item["value"]
+                }
             
             # Save to cache for future use
             save_rankings_to_cache(indicator, year, rankings)
@@ -520,15 +552,233 @@ def analyze_correlations():
         if len(x_values) > 1:
             correlation = np.corrcoef(x_values, y_values)[0, 1]
     
+    # Get country name
+    country_name = get_country_name(country_code)
+    
     return render_template("correlation_results.html", 
-                           country=country, 
+                           country=country_name, 
                            indicator1=indicator1, 
                            indicator2=indicator2, 
                            correlation=correlation,
                            scatter_data=scatter_data,
-                           years=sorted(filtered_data.keys()))
+                           years=sorted(filtered_data.keys()),
+                           is_two_countries=False)
+
+@app.route("/correlations/analyze_two_countries", methods=["POST"])
+def analyze_two_countries_correlation():
+    country1 = request.form.get("country1")
+    country2 = request.form.get("country2")
+    start_year = request.form.get("start_year")
+    end_year = request.form.get("end_year")
+    indicator1 = request.form.get("indicator1")
+    indicator2 = request.form.get("indicator2")
+    
+    # Validate inputs
+    if not country1 or not country2 or not start_year or not end_year or not indicator1 or not indicator2:
+        return redirect("/correlations")
+    if not start_year.isdigit() or not end_year.isdigit():
+        return redirect("/correlations")
+    
+    start_year = int(start_year)
+    end_year = int(end_year)
+    country1_code = country1.upper()
+    country2_code = country2.upper()
+    
+    # Get data for both countries and indicators
+    try:
+        # Convert country codes if needed
+        if len(country1_code) == 2:
+            country1_code = convert_iso2_to_iso3(country1_code)
+        if len(country2_code) == 2:
+            country2_code = convert_iso2_to_iso3(country2_code)
+            
+        # Get data for both countries using the existing get_data function
+        years_range = list(range(start_year, end_year + 1))
+        
+        # Get data for first country and indicator
+        results1 = {}
+        data1 = get_data(indicator1, country1_code, years_range)
+        results1[indicator1] = []
+        
+        # Format data for first country
+        for year, data in data1.items():
+            results1[indicator1].append({
+                "year": year,
+                "value": data["value"]
+            })
+        
+        # Get data for second country and indicator
+        results2 = {}
+        data2 = get_data(indicator2, country2_code, years_range)
+        results2[indicator2] = []
+        
+        # Format data for second country
+        for year, data in data2.items():
+            results2[indicator2].append({
+                "year": year,
+                "value": data["value"]
+            })
+    except Exception as e:
+        print(f"Error getting data: {e}")
+        return redirect("/correlations")
+    
+    # Align data points by year
+    aligned_data = {}
+    for data_point in results1[indicator1]:
+        year = data_point["year"]
+        aligned_data[year] = {"indicator1": data_point["value"]}
+    
+    for data_point in results2[indicator2]:
+        year = data_point["year"]
+        if year in aligned_data:
+            aligned_data[year]["indicator2"] = data_point["value"]
+    
+    # Filter out years where either indicator is missing
+    filtered_data = {year: values for year, values in aligned_data.items() 
+                    if "indicator1" in values and "indicator2" in values 
+                    and values["indicator1"] is not None and values["indicator2"] is not None}
+    
+    # Calculate correlation coefficient if we have enough data points
+    correlation = None
+    scatter_data = []
+    
+    if len(filtered_data) > 1:
+        x_values = []
+        y_values = []
+        
+        for year, values in filtered_data.items():
+            x_values.append(values["indicator1"])
+            y_values.append(values["indicator2"])
+            scatter_data.append({
+                "year": year,
+                "x": values["indicator1"],
+                "y": values["indicator2"]
+            })
+        
+        # Calculate correlation coefficient
+        if len(x_values) > 1:
+            correlation = np.corrcoef(x_values, y_values)[0, 1]
+    
+    # Get country names
+    country1_name = get_country_name(country1_code)
+    country2_name = get_country_name(country2_code)
+    
+    return render_template("correlation_results.html", 
+                           country=f"{country1_name} vs {country2_name}", 
+                           indicator1=f"{indicator1} ({country1_name})", 
+                           indicator2=f"{indicator2} ({country2_name})", 
+                           correlation=correlation,
+                           scatter_data=scatter_data,
+                           years=sorted(filtered_data.keys()),
+                           is_two_countries=True)
+
+@app.route("/rankings")
+def rankings():
+    # Use two years back as the default year since that's likely the latest complete data year
+    current_year = datetime.now().year - 2
+    return render_template("rankings.html", current_year=current_year, valid_indicators=codes.keys())
+
+@app.route("/rankings/view", methods=["POST"])
+def view_rankings():
+    indicator = request.form.get("indicator")
+    year = request.form.get("year")
+    
+    # Validate inputs
+    if not indicator or not year or not year.isdigit():
+        print("indicator: ", indicator)
+        print("year: ", year)
+        return redirect("/rankings")
+    
+    year = int(year)
+    
+    # Make sure the indicator is valid
+    if indicator not in codes:
+        print(f"Invalid indicator: {indicator}")
+        return redirect("/rankings")
+    
+    # Get global rankings for the indicator and year
+    rankings_data = get_global_data(indicator, year)
+    
+    if not rankings_data:
+        print("No rankings data found for indicator", indicator, "and year", year)
+        return redirect("/rankings")
+    
+    # Convert rankings to a list of country objects with names
+    rankings_list = []
+    countries = []
+    values = []
+    
+    # Sort by rank
+    sorted_rankings = sorted([(code, data) for code, data in rankings_data.items()], 
+                             key=lambda x: x[1]["rank"])
+    
+    for code, data in sorted_rankings:
+        country_name = get_country_name(code)
+        rankings_list.append({
+            "rank": data["rank"],
+            "name": country_name,
+            "iso3": code,
+            "value": data["value"]
+        })
+        
+        # Only include top 20 countries in the chart
+        if len(countries) < 20:
+            countries.append(country_name)
+            values.append(data["value"])
+    
+    # Get indicator information
+    indicator_info = get_indicator_info(indicator)
+    data_source = "World Bank Development Indicators"
+    
+    return render_template("rankings_results.html",
+                           indicator=indicator,
+                           year=year,
+                           rankings=rankings_list,
+                           countries=countries,
+                           values=values,
+                           indicator_info=indicator_info,
+                           data_source=data_source)
+
+def get_indicator_info(indicator):
+    indicator_descriptions = {
+        "gdp": "Gross Domestic Product (GDP) is the total value of all goods and services produced in a country in a specific time period.",
+        "gdp_per_capita": "GDP per capita is the GDP divided by the total population, providing an average measure of economic output per person.",
+        "gdp_growth": "GDP growth rate shows the year-over-year percentage change in a country's economic output.",
+        "inflation": "Inflation measures the annual percentage change in the general price level of goods and services.",
+        "unemployment": "Unemployment rate represents the percentage of the labor force that is jobless and actively seeking employment.",
+        "population": "Total population count of a country or region.",
+        "life_expectancy": "Average number of years a newborn is expected to live if mortality patterns remain constant.",
+        "fdi_inflows": "Foreign Direct Investment inflows represent the value of investments made by foreign entities in the domestic economy.",
+        "fdi_outflows": "Foreign Direct Investment outflows represent the value of investments made by domestic entities in foreign economies.",
+        "exports_gdp": "Exports as a percentage of GDP measures the value of goods and services sold to other countries relative to economic output.",
+        "imports_gdp": "Imports as a percentage of GDP measures the value of goods and services purchased from other countries relative to economic output.",
+        "gini_index": "The Gini index measures income inequality, with higher values indicating greater inequality.",
+        "poverty_rate": "Percentage of the population living below the national poverty line.",
+        "debt": "Government debt as a percentage of GDP indicates the level of a country's indebtedness relative to its economic output."
+    }
+    
+    return indicator_descriptions.get(indicator, f"Data for {indicator.replace('_', ' ').title()}")
+
+@app.template_filter('format_number')
+def format_number(value):
+    if value is None:
+        return "N/A"
+    
+    if isinstance(value, (int, float)):
+        if value >= 1_000_000_000_000:
+            return f"${value/1_000_000_000_000:.2f} trillion"
+        elif value >= 1_000_000_000:
+            return f"${value/1_000_000_000:.2f} billion"
+        elif value >= 1_000_000:
+            return f"${value/1_000_000:.2f} million"
+        elif value >= 1000:
+            return f"{value:,.0f}"
+        elif value % 1 == 0:
+            return f"{value:.0f}"
+        else:
+            return f"{value:.2f}"
+    
+    return str(value)
 
 if __name__ == "__main__":
-    #port = int(os.environ.get("PORT", 5000))
-    #app.run(debug=False, host="0.0.0.0", port=port)
     app.run(debug=True)
