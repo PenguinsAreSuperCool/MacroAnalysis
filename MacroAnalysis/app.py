@@ -701,7 +701,8 @@ def view_rankings():
     
     if not rankings_data:
         for i in range(0, 6):
-            rankings_data = get_global_data(indicator, year - i)
+            year = year - i
+            rankings_data = get_global_data(indicator, year)
             if rankings_data:
                 break
     if not rankings_data:
