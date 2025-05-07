@@ -700,8 +700,11 @@ def view_rankings():
     rankings_data = get_global_data(indicator, year)
     
     if not rankings_data:
-        print("No rankings data found for indicator", indicator, "and year", year)
-        return redirect("/rankings")
+        for i in range(0, 6):
+            rankings_data = get_global_data(indicator, year - i)
+            if rankings_data:
+                break
+            return redirect("/rankings")
     
     # Convert rankings to a list of country objects with names
     rankings_list = []
