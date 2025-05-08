@@ -674,8 +674,7 @@ def analyze_two_countries_correlation():
 
 @app.route("/rankings")
 def rankings():
-    # Use two years back as the default year since that's likely the latest complete data year
-    current_year = datetime.now().year - 2
+    current_year = datetime.now().year
     return render_template("rankings.html", current_year=current_year, valid_indicators=codes.keys())
 
 @app.route("/rankings/view", methods=["POST"])
@@ -700,7 +699,7 @@ def view_rankings():
     rankings_data = get_global_data(indicator, year)
     
     if not rankings_data:
-        for i in range(0, 6):
+        for i in range(0, 11):
             year = year - i
             rankings_data = get_global_data(indicator, year)
             if rankings_data:
