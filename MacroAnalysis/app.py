@@ -684,15 +684,12 @@ def view_rankings():
     
     # Validate inputs
     if not indicator or not year or not year.isdigit():
-        print("indicator: ", indicator)
-        print("year: ", year)
         return redirect("/rankings")
     
     year = int(year)
     
     # Make sure the indicator is valid
     if indicator not in codes:
-        print(f"Invalid indicator: {indicator}")
         return redirect("/rankings")
     
     # Get global rankings for the indicator and year
@@ -705,7 +702,8 @@ def view_rankings():
             if rankings_data:
                 break
     if not rankings_data:
-        return redirect("/rankings")
+        current_year = datetime.now().year
+        return render_template("rankings.html", current_year=current_year, valid_indicators=codes.keys(), error_message="No data available for the selected indicator")
     
     # Convert rankings to a list of country objects with names
     rankings_list = []

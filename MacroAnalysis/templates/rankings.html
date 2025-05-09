@@ -11,7 +11,11 @@
         <h2>Global Economic Rankings</h2>
         <p class="rankings-intro">Explore how countries rank globally across different economic indicators.</p>
     </div>
-    
+    {% if error_message %}
+        <div class="error-message">
+            <p>{{ error_message }}</p>
+        </div>
+    {% endif %}
     <div class="rankings-form-container">
         <form id="rankings_form" action="/rankings/view" method="post" class="text-center">
             <div class="rankings-form-row">
