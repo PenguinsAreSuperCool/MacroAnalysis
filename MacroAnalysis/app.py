@@ -27,7 +27,6 @@ codes = {
         "renewable_energy": "EG.FEC.RNEW.ZS",
         "carbon_emissions": "EN.ATM.CO2E.KT",
         "tourism": "ST.INT.ARVL",
-        "foreign_investment": "BX.KLT.DINV.CD",
         "trade_balance": "NE.RSB.GNFS.CD",
         "foreign_aid": "DT.ODA.ALLD.CD",
         "debt": "DT.DOD.DECT.CD",
