@@ -1,0 +1,174 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    About
+{% endblock %}
+{% block main %}
+<div class="about_text home-body">
+    <div class="about-container">
+    <h1><a href="/" class="title-link">MacroAnalysis</a></h1>
+    <p>
+        MacroAnalysis is a CS50 final project designed to allow users to easily see and compare almost every major macroeconomic indicator for nearly every country in the world.
+        All data is directly from the World Bank. Forecasts are from the IMF.
+    </p>
+
+    <h2>Key Features</h2>
+    <ul>
+        <li>🌍 Interactive world map for country selection 🌍</li>
+        <li>📈 Dynamic line graphs 📈</li>
+        <li>⚖️ Support for comparing multiple indicators and countries ⚖️</li>
+        <li>🌑 Dark-themed UI, as that should be the default 🌑 </li>
+        <li>📡 Real-time economic data 📡</li>
+        <li>📉Forecasting📉</li>
+    </ul>
+
+    <h2>About the Creator</h2>
+    <p>
+        My name is Leonardo Lupchinski and I am an aspiring student at the Dartmouth College for the class of 2030.
+    </p>
+    <p>
+        I was originally born in 2005 in Brazil but spent the majority of my life in Spain and Portugal. I believe in the power of economics as a way to change the world for the better.
+    </p>
+    <p>
+        In CS50, I learned how to use Python, Flask, HTML, CSS, and JavaScript to create web applications. This project was only possible because of the amazing opportunities given by Harvard University and the CS50 team!
+    </p>
+
+    <h2>Special Thanks</h2>
+    <ul>
+        <li>👨‍🏫 Professor Malan, for amazing teaching skills and visualization ideas 👨‍🏫 </li>
+        <li>🧑‍🏫 Preceptor Yuliia, for her support and incredible examples that helped me a lot 🧑‍🏫</li>
+        <li>🕵️ All the CS50 Staff, for the amazing problem sets (especially Fiftyville — who would have thought SQL could be fun?) 🕵️</li>
+        <li>🏛️ EdX and Harvard for making this course available for free 🏛️</li>
+    </ul>
+    <h2>Contact</h2>
+    <p>
+        LeonardoLupchinski@icloud.com
+    </p>
+    <h2><a href="https://github.com/PenguinsAreSuperCool/MacroAnalysis">SourceCode</a></h2>
+    <a href="/" style="display: block; margin: 20px 0;">Home</a>
+    <button id="bored_button" class="btn btn-primary">Bored?</button>
+    <div id="game_container" style="display: none;">
+        <div id="tictactoe">
+            <div class="cell"></div>
+            <div class="cell"></div>
+            <div class="cell"></div>
+            <div class="cell"></div>
+            <div class="cell"></div>
+            <div class="cell"></div>
+            <div class="cell"></div>
+            <div class="cell"></div>
+            <div class="cell"></div>
+        </div>
+        <p id="game_status">Your turn (X)</p>
+        <button id="restart_game" class="btn btn-secondary" style="display: none;">Play Again</button>
+    </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const gameContainer = document.getElementById('game_container');
+            const boredButton = document.getElementById('bored_button');
+            const cells = document.querySelectorAll('.cell');
+            const gameStatus = document.getElementById('game_status');
+            const restartButton = document.getElementById('restart_game');
+            let gameBoard = ['', '', '', '', '', '', '', '', ''];
+            let gameActive = true;
+
+            boredButton.addEventListener('click', function() {
+                gameContainer.style.display = gameContainer.style.display === 'none' ? 'block' : 'none';
+                if (gameContainer.style.display === 'block') {
+                    resetGame();
+                }
+            });
+
+            cells.forEach((cell, index) => {
+                cell.addEventListener('click', () => handleCellClick(index));
+            });
+
+            restartButton.addEventListener('click', resetGame);
+
+            function handleCellClick(index) {
+                if (gameBoard[index] === '' && gameActive) {
+                    // Player's move
+                    makeMove(index, 'X');
+                    if (gameActive) {
+                        // Computer's move
+                        setTimeout(computerMove, 500);
+                    }
+                }
+            }
+
+            function makeMove(index, player) {
+                gameBoard[index] = player;
+                cells[index].textContent = player;
+                if (checkWin(player)) {
+                    gameStatus.textContent = player === 'X' ? 'You win!' : 'Computer wins!';
+                    gameActive = false;
+                    restartButton.style.display = 'block';
+                } else if (gameBoard.every(cell => cell !== '')) {
+                    gameStatus.textContent = 'Draw!';
+                    gameActive = false;
+                    restartButton.style.display = 'block';
+                } else {
+                    gameStatus.textContent = player === 'X' ? "Computer's turn (O)" : 'Your turn (X)';
+                }
+            }
+
+            function computerMove() {
+                // Simple AI: Try to win, then block player, then random move
+                const availableMoves = gameBoard.reduce((moves, cell, index) => {
+                    if (cell === '') moves.push(index);
+                    return moves;
+                }, []);
+
+                // Try to win
+                for (let move of availableMoves) {
+                    gameBoard[move] = 'O';
+                    if (checkWin('O')) {
+                        makeMove(move, 'O');
+                        return;
+                    }
+                    gameBoard[move] = '';
+                }
+
+                // Try to block player
+                for (let move of availableMoves) {
+                    gameBoard[move] = 'X';
+                    if (checkWin('X')) {
+                        makeMove(move, 'O');
+                        return;
+                    }
+                    gameBoard[move] = '';
+                }
+
+                // Random move
+                const randomIndex = Math.floor(Math.random() * availableMoves.length);
+                makeMove(availableMoves[randomIndex], 'O');
+            }
+
+            function checkWin(player) {
+                const winConditions = [
+                    [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+                    [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
+                    [0, 4, 8], [2, 4, 6] // Diagonals
+                ];
+
+                return winConditions.some(condition => {
+                    return condition.every(index => {
+                        return gameBoard[index] === player;
+                    });
+                });
+            }
+
+            function resetGame() {
+                gameBoard = ['', '', '', '', '', '', '', '', ''];
+                gameActive = true;
+                cells.forEach(cell => cell.textContent = '');
+                gameStatus.textContent = 'Your turn (X)';
+                restartButton.style.display = 'none';
+            }
+        });
+    </script>
+</div>
+{% endblock %}

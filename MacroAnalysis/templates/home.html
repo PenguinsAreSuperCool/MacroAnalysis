@@ -1,0 +1,131 @@
+{% extends "layout.html" %}
+
+{% block title %}{% endblock %}
+
+{% block main %}
+<div class="home-body">
+
+    <section class="hero">
+        <div class="hero-content">
+            <h1>MacroAnalysis</h1>
+            <h2>Explore Global Economic Data Easily</h2>
+            <form id="country_form" action="/country" method="post" class="search-container">
+                <input type="hidden" name="country" id="country" value="">
+                <input type="hidden" name="start_year" value="1960">
+                <input type="hidden" name="end_year" value="2025">
+                <div class="search-input-group">
+                    <input type="text" id="country_search" placeholder="Search for a country..." autocomplete="off">
+                    <button type="button" id="search_button" class="search-button">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <section class="quick-actions">
+        <div class="action-grid">
+            <a href="/map" class="action-card">
+                <i class="fas fa-globe-americas"></i>
+                <h3>Interactive Map</h3>
+                <p>Visualize global economic data</p>
+            </a>
+            <a href="/compare" class="action-card">
+                <i class="fas fa-chart-line"></i>
+                <h3>Compare Countries</h3>
+                <p>Analyze multiple economies</p>
+            </a>
+            <a href="/correlations" class="action-card">
+                <i class="fas fa-project-diagram"></i>
+                <h3>Correlation Analysis</h3>
+                <p>Discover relationships between indicators</p>
+            </a>
+            <a href="/rankings" class="action-card">
+                <i class="fas fa-trophy"></i>
+                <h3>Global Rankings</h3>
+                <p>Compare countries across indicators</p>
+            </a>
+        </div>
+    </section>
+
+    <section class="featured-metrics">
+        <h2>Features</h2>
+        <div class="metrics-grid">
+            <div class="metric-card gdp">
+                <h3>Interactive World Map</h3>
+                <p class="indicator-desc">With support for comparison and forecasting</p>
+                <div id="gdp-preview"></div>
+            </div>
+            <div class="metric-card macro">
+                <h3>Macroeconomic Insights</h3>
+                <p class="indicator-desc">Based on multiple economic indicators</p>
+                <div id="macro-preview"></div>
+            </div>
+            <div class="metric-card data">
+                <h3>Real-time Data</h3>
+                <p class="indicator-desc">Real-time, reliable data from the IMF and World Bank</p>
+                <div id="development-preview"></div>
+            </div>
+        </div>
+    </section>
+
+
+    <section class="resources">
+        <h2>Resources</h2>
+        <div class="resources-grid">
+            <a href="/about" class="resource-link">
+                <i class="fas fa-info-circle"></i>
+                About
+            </a>
+        </div>
+    </section>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('country_form');
+        const searchInput = document.getElementById('country_search');
+        const searchButton = document.getElementById('search_button');
+        const countryInput = document.getElementById('country');
+
+        function performSearch() {
+            const query = searchInput.value.trim();
+            if (!query) {
+                alert('Please enter a country name');
+                return;
+            }
+
+            searchButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Searching...';
+            searchButton.disabled = true;
+
+            fetch(`https://nominatim.openstreetmap.org/search?country=${encodeURIComponent(query)}&format=json&limit=1`)
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.length) throw new Error('Country not found');
+                    return fetch(`https://nominatim.openstreetmap.org/reverse?lat=${data[0].lat}&lon=${data[0].lon}&format=json`);
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.address?.country_code) throw new Error('Could not find country code');
+                    countryInput.value = data.address.country_code.toUpperCase();
+                    console.log('Submitting form with country code:', countryInput.value);
+                    form.submit();
+                })
+                .catch(error => {
+                    console.error('Search error:', error);
+                    searchButton.innerHTML = '<i class="fas fa-search"></i> Search';
+                    searchButton.disabled = false;
+                    alert(error.message || 'Error searching for country');
+                });
+        }
+
+        searchButton.addEventListener('click', performSearch);
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                performSearch();
+            }
+        });
+    });
+</script>
+{% endblock %}
