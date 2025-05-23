@@ -2,8 +2,7 @@
 ### Video Demo: https://youtu.be/QDYxbKutPuQ
 ### Description:
 
-**MacroAnalysis** is a CS50 final project designed to allow users to easily see and compare almost every major macroeconomic indicator for nearly every country in the world.
-All data is directly from the **World Bank**. Forecasts are from the **IMF**. 
+Created in 2025 by Leonardo Lupchinski, **MacroAnalysis** started as a CS50 final project designed to allow users to easily see and compare almost every major macroeconomic indicator for nearly every country in the world. With time, it has evolved into a powerful tool for economic analysis, allowing users to visualize, compare, and **understand economic data easily**.
 
 ## Key Features
 
