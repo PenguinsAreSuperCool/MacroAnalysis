@@ -1,0 +1,100 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Global Rankings - {{ indicator.replace('_', ' ').title() }}
+{% endblock %}
+
+{% block main %}
+<div class="rankings-results-container">
+    <div class="text-center">
+        <h1><a href="/">MacroAnalysis</a></h1>
+        <h2>Global Rankings: {{ indicator.replace('_', ' ').title() }} ({{ year }})</h2>
+    </div>
+    
+    <div class="rankings-results">
+        <div class="rankings-table-container">
+            <table class="rankings-table">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Country</th>
+                        <th>Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for country in rankings %}
+                    <tr>
+                        <td class="rank-cell">{{ country.rank }}</td>
+                        <td class="country-cell">
+                            <form id="country_form_{{ country.iso3 }}" action="/country" method="post">
+                                <input type="hidden" name="country" value="{{ country.iso3 }}">
+                                <input type="hidden" name="start_year" value="1960">
+                                <input type="hidden" name="end_year" value="2025">
+                                <input type="hidden" name="indicators" value="{{ indicator }}">
+                                <a href="#" onclick="document.getElementById('country_form_{{ country.iso3 }}').submit(); return false;" class="country-link">
+                                    {{ country.name }}
+                                </a>
+                            </form>
+                        </td>
+                        <td class="value-cell">{{ country.value|format_number }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="rankings-visualization">
+            <div id="rankings-chart"></div>
+        </div>
+    </div>
+    
+    <div class="rankings-info">
+        <h3>About This Indicator</h3>
+        <p>{{ indicator_info }}</p>
+        <p class="data-source">Data source: {{ data_source }}</p>
+    </div>
+</div>
+
+<script src="https://cdn.plot.ly/plotly-3.0.1.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var chartData = [{
+            type: 'bar',
+            x: {{ countries|tojson }},
+            y: {{ values|tojson }},
+            marker: {
+                color: 'rgba(55, 128, 191, 0.7)',
+                line: {
+                    color: 'rgba(55, 128, 191, 1.0)',
+                    width: 1
+                }
+            }
+        }];
+        
+        var chartLayout = {
+            title: '{{ indicator.replace("_", " ").title() }} by Country ({{ year }})',
+            xaxis: {
+                title: 'Country',
+                tickangle: -45
+            },
+            yaxis: {
+                title: '{{ indicator.replace("_", " ").title() }}'
+            },
+            margin: {
+                l: 50,
+                r: 50,
+                b: 100,
+                t: 50,
+                pad: 4
+            },
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(0,0,0,0)',
+            font: {
+                color: '#ddd'
+            }
+        };
+        
+        Plotly.newPlot('rankings-chart', chartData, chartLayout, {responsive: true});
+    });
+</script>
+{% endblock %}

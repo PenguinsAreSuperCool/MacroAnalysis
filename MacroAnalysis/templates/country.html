@@ -1,0 +1,210 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    {{ country }}
+{% endblock %}
+{% block main %}
+<div class="country-container">
+    <div class="text-center"></div>
+        <h1><a href="/">MacroAnalysis</a></h1>
+    </div>
+    <div class="graph-grid" style="display: flex; flex-wrap: wrap; flex-direction: column; gap: 1em;">
+        {% for indicator in indicators %}
+            <div id="resizable_{{ indicator }}" class="graph-resizable" draggable="true" ondragstart="dragStart(event)" ondragover="allowDrop(event)" ondrop="drop(event)">
+                <div id="graph_{{ indicator }}" class="graph-box"></div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <div class="btn-container text-center" style="margin-top: 1.5em;">
+        <button id="toggle-layout" class="btn btn-secondary">Switch to Grid View</button>
+    </div>
+</div>
+<script src="https://cdn.plot.ly/plotly-3.0.1.min.js"></script>
+<script>
+    const years = {{ years | list }};
+    const currentYear = new Date().getFullYear();
+    const baseColor = '#1f77b4';
+
+    {% for indicator in indicators %}
+        const {{ indicator }}_full_data = {{ data_series[indicator] | tojson }};
+        const {{ indicator }}_historical = { x: [], y: [] };
+        const {{ indicator }}_forecast = { x: [], y: [] };
+ 
+        let hasRanking_{{ indicator }} = false;
+        let latestRankingYear_{{ indicator }} = null;
+        let latestRanking_{{ indicator }} = null;
+        
+
+        
+        {{ indicator }}_full_data.forEach(point => {
+            if (point.type === 'historical') {
+                {{ indicator }}_historical.x.push(point.year);
+                {{ indicator }}_historical.y.push(point.value);
+                
+                if (point.ranking && Object.keys(point.ranking).length > 0) {
+                    hasRanking_{{ indicator }} = true;
+                    if (!latestRankingYear_{{ indicator }} || point.year > latestRankingYear_{{ indicator }}) {
+                        latestRankingYear_{{ indicator }} = point.year;
+                        latestRanking_{{ indicator }} = point.ranking;
+                    }
+                }
+            } else if (point.type === 'forecast') {
+                {{ indicator }}_forecast.x.push(point.year);
+                {{ indicator }}_forecast.y.push(point.value);
+            }
+        });
+
+        const layout_{{ indicator }} = {
+            title: { 
+                text: '{{ indicator | replace("_", " ") | title }} of {{ country }}', 
+                font: { color: 'white' } 
+            },
+            xaxis: { 
+                title: 'Year', 
+                color: 'white',
+                showgrid: false
+            },
+            yaxis: { 
+                title: 'Value', 
+                color: 'white',
+                showgrid: false
+            },
+            paper_bgcolor: 'black',
+            plot_bgcolor: 'black',
+            dragmode: false,
+            scrollZoom: false,
+            hovermode: 'closest',
+            staticPlot: true,
+            margin: { t: 50, b: 50, l: 50, r: 50 },
+            autosize: true,
+            annotations: [],
+            legend: {
+                font: { color: 'white' }
+            }
+        };
+
+        if (hasRanking_{{ indicator }} && latestRanking_{{ indicator }}) {
+            const rankText_{{ indicator }} = `Global Rank: #${latestRanking_{{ indicator }}.rank} of ${latestRanking_{{ indicator }}.total} (${latestRankingYear_{{ indicator }}})`;
+            layout_{{ indicator }}.annotations.push({
+                x: 0.05,
+                y: 0.95,
+                xref: 'paper',
+                yref: 'paper',
+                text: rankText_{{ indicator }},
+                showarrow: false,
+                font: {
+                    family: 'Arial',
+                    size: 14,
+                    color: 'white'
+                },
+                align: 'left',
+                xanchor: 'left',
+                yanchor: 'top',
+                bgcolor: 'rgba(147,112,219,0.7)',
+                bordercolor: '#9370DB',
+                borderwidth: 1,
+                borderpad: 6
+            });
+        }
+
+        const traces_{{ indicator }} = [
+            {
+                type: 'scatter',
+                mode: 'lines+markers',
+                x: {{ indicator }}_historical.x,
+                y: {{ indicator }}_historical.y,
+                name: '{{ indicator.title() }} (Historical)',
+                line: { dash: 'solid', color: baseColor },
+                textfont: { color: 'white' },
+                opacity: 0
+            },
+            {
+                type: 'scatter',
+                mode: 'lines+markers',
+                x: {{ indicator }}_forecast.x,
+                y: {{ indicator }}_forecast.y,
+                name: '{{ indicator.title() }} (Forecast)',
+                line: { dash: 'dash', color: baseColor },
+                marker: { color: baseColor },
+                textfont: { color: 'white' },
+                opacity: 0
+            }
+        ];
+        
+        Plotly.newPlot('graph_{{ indicator }}', traces_{{ indicator }}, layout_{{ indicator }}, { 
+            scrollZoom: false, 
+            displayModeBar: true, 
+            staticPlot: false, 
+            doubleClick: false,
+            displaylogo: false
+        });
+        
+        Plotly.animate('graph_{{ indicator }}', {
+            data: traces_{{ indicator }}.map(trace => ({...trace, opacity: 1})),
+            traces: [0, 1],
+            layout: {}
+        }, {
+            transition: { duration: 1000, easing: 'cubic-in-out' },
+            frame: { duration: 1000, redraw: true }
+        });
+    {% endfor %}
+
+    window.addEventListener("resize", () => {
+        {% for indicator in indicators %}
+            Plotly.Plots.resize(document.getElementById('graph_{{ indicator }}'));
+        {% endfor %}
+    });
+
+    const resizeObserver = new ResizeObserver(entries => {
+        for (let entry of entries) {
+            const graph = entry.target.querySelector('.graph-box');
+            if (graph) {
+                const newHeight = entry.contentRect.height;
+                const newWidth = entry.contentRect.width;
+                Plotly.relayout(graph, { height: newHeight, width: newWidth });
+            }
+        }
+    });
+
+    document.querySelectorAll('.graph-resizable').forEach(box => {
+        resizeObserver.observe(box);
+    });
+
+    function dragStart(e) {
+        e.dataTransfer.setData("text/plain", e.target.id);
+    }
+    function allowDrop(e) {
+        e.preventDefault();
+    }
+    function drop(e) {
+        e.preventDefault();
+        const draggedId = e.dataTransfer.getData("text/plain");
+        const draggedEl = document.getElementById(draggedId);
+        const dropTarget = e.currentTarget;
+        if (draggedEl && dropTarget && draggedEl !== dropTarget) {
+            const parent = dropTarget.parentNode;
+            parent.insertBefore(draggedEl, dropTarget);
+        }
+    }
+
+    document.getElementById('toggle-layout').addEventListener('click', function () {
+        const grid = document.querySelector('.graph-grid');
+        const resizables = document.querySelectorAll('.graph-resizable');
+        if (grid.style.flexDirection === 'column') {
+            grid.style.flexDirection = '';
+            resizables.forEach(el => {
+                el.style.width = '48%';
+            });
+            this.textContent = 'Switch to List View';
+        } else {
+            grid.style.flexDirection = 'column';
+            resizables.forEach(el => {
+                el.style.width = '100%';
+            });
+            this.textContent = 'Switch to Grid View';
+        }
+    });
+</script>
+   
+{% endblock %}

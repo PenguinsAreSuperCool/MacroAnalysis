@@ -1,0 +1,142 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Map
+{% endblock %}
+{% block main %}
+
+    <div class="map-container">
+        <div class="text-center">
+            <h1><a href="/">MacroAnalysis</a></h1>
+        </div>
+        <div class="text-center">
+            <form id="country_form" action="/country" method="post" class="text-center">
+                <input type="hidden" name="country" id="country">
+                <label for="start_year">Start Year:</label>
+                <input type="number" id="start_year" name="start_year" value="1960" min="1960" max="{{ current_year }}" class="dark-input">
+                <label for="end_year">End Year:</label>
+                <input type="number" id="end_year" name="end_year" value="{{ current_year }}" min="1960" max="{{ current_year }}" class="dark-input">
+                <details>
+                    <summary>Select data to display:</summary>
+                    <div class="indicator-search-container">
+                        <input type="text" id="indicatorSearch" placeholder="Search indicators...">
+                    </div>
+                    <div class="indicator-grid" id="indicatorList">
+                        {% for indicator in valid_indicators | sort %}
+                            <label>
+                                <input type="checkbox" name="indicators" value="{{ indicator }}">
+                                {{ indicator.replace('_', ' ').title() }}
+                            </label>
+                        {% endfor %}
+                    </div>
+                </details>
+            </form>
+        </div>
+        <div id="map"></div>
+    </div>
+
+    <div class="button-search">
+        <label for="country_search">Or search for a country:</label>
+        <input type="text" id="country_search" placeholder="Type country name">
+        <button type="button" onclick="searchCountry()" class="btn btn-secondary">Select</button>
+    </div>
+
+    <script>
+    const map = L.map('map', {
+        minZoom: 2,
+        maxZoom: 4,
+        maxBoundsViscosity: 1.0,
+        maxBounds: [[-60, -160], [85, 160]]
+    }).setView([30, 0], 3);
+
+    let currentTheme = 'dark_all';
+    let tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: 'OpenStreetMap contributors'
+    }).addTo(map);
+    
+    function highlightFeature(e) {
+        const layer = e.target;
+        layer.setStyle({
+            weight: 2,
+            color: '#f0f',
+            fillOpacity: 0.3
+        });
+        layer.bringToFront();
+    }
+
+    function resetHighlight(e) {
+        if (geojson) {
+            geojson.resetStyle(e.target);
+        }
+    }
+
+    function onEachFeature(feature, layer) {
+        layer.on({
+            mouseover: highlightFeature,
+            mouseout: resetHighlight
+        });
+    }
+
+    let geojson;
+    fetch("https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson")
+        .then(res => res.json())
+        .then(data => {
+            geojson = L.geoJson(data, {
+                style: {
+                    fillColor: '#444',
+                    weight: 1,
+                    color: '#888',
+                    fillOpacity: 0.01
+                },
+                onEachFeature: onEachFeature
+            }).addTo(map);
+        });
+
+    map.on('click', function(e) {
+        const { lat, lng } = e.latlng;
+
+        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+            .then(res => res.json())
+            .then(data => {
+                const countryCode = data.address.country_code.toUpperCase();
+                document.getElementById('country').value = countryCode;
+                document.getElementById('country_form').submit();
+            });
+    });
+
+    function searchCountry() {
+        const query = document.getElementById('country_search').value;
+        if (!query) return;
+
+        fetch(`https://nominatim.openstreetmap.org/search?country=${encodeURIComponent(query)}&format=json&limit=1`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.length > 0) {
+                    const { lat, lon } = data[0];
+                    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`)
+                        .then(res => res.json())
+                        .then(reverseData => {
+                            const countryCode = reverseData.address.country_code.toUpperCase();
+                            if (countryCode) {
+                                document.getElementById('country').value = countryCode;
+                                document.getElementById('country_form').submit(); // directly submit form
+                            } else {
+                                alert("Could not find a valid country code.");
+                            }
+                        });
+                } else {
+                    alert("Country not found. Please try again.");
+                }
+            })
+            .catch(() => alert("Error occurred during search."));
+    }
+        document.getElementById('indicatorSearch').addEventListener('input', function () {
+            const filter = this.value.toLowerCase();
+            const labels = document.querySelectorAll('#indicatorList label');
+            labels.forEach(label => {
+                const text = label.textContent.toLowerCase();
+                label.style.display = text.includes(filter) ? '' : 'none';
+            });
+        });
+    </script>
+{% endblock %}

@@ -1,0 +1,243 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Compare
+{% endblock %}
+{% block main %}
+
+    <div class="map-container">
+        <div class="text-center">
+            <h1><a href="/">MacroAnalysis</a></h1>
+        </div>
+        <div class="text-center">
+            <form id="country_form" action="/compare/country" method="post" class="text-center">
+                <input type="hidden" name="country1" id="country1">
+                <input type="hidden" name="country2" id="country2">
+                <input type="hidden" name="country3" id="country3">
+                <input type="hidden" name="country4" id="country4">
+                <input type="hidden" name="country5" id="country5">
+                <input type="hidden" name="country6" id="country6">
+                <input type="hidden" name="country7" id="country7">
+                <input type="hidden" name="country8" id="country8">
+                <input type="hidden" name="country9" id="country9">
+                <input type="hidden" name="country10" id="country10">
+                <label for="start_year">Start Year:</label>
+                <input type="number" id="start_year" name="start_year" value="1960" min="1960" max="{{ current_year }}" class="dark-input">
+                <label for="end_year">End Year:</label>
+                <input type="number" id="end_year" name="end_year" value="{{ current_year }}" min="1960" max="{{ current_year }}" class="dark-input">
+                <details>
+                    <summary>Select data to display:</summary>
+                    <div class="indicator-search-container">
+                        <input type="text" id="indicatorSearch" placeholder="Search indicators...">
+                    </div>
+                    <div class="indicator-grid" id="indicatorList">
+                        {% for indicator in valid_indicators | sort %}
+                            <label>
+                                <input type="checkbox" name="indicators" value="{{ indicator }}">
+                                {{ indicator.replace('_', ' ').title() }}
+                            </label>
+                        {% endfor %}
+                    </div>
+                </details>
+                <div style="margin-top: 10px;">
+                    <button type="submit" class="btn btn-primary">Compare Countries</button>
+                </div>
+            </form>
+        </div>
+        <div id="selected-countries"></div>
+        <div id="map" class="compare-map"></div>
+
+        <div class="button-search">
+            <label for="country_search">Or search for a country:</label>
+            <input type="text" id="country_search" placeholder="Type country name">
+            <button type="button" onclick="searchCountry()" class="btn btn-secondary" style="margin-left: 0.5em;">Select</button>
+        </div>
+    </div>
+
+    <script>
+    const map = L.map('map', {
+        minZoom: 2,  
+        maxZoom: 4,  
+        maxBoundsViscosity: 1.0,  
+        maxBounds: [[-60, -160], [85, 160]] 
+    }).setView([30, 0], 3); 
+
+    let currentTheme = 'dark_all';
+    let tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    map.on('click', function(e) {
+        const { lat, lng } = e.latlng;
+
+        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+            .then(res => res.json())
+            .then(data => {
+                const countryCode = data.address.country_code.toUpperCase();
+                const countryName = data.address.country;
+
+                const fields = ['country1','country2','country3','country4','country5','country6','country7','country8','country9','country10'];
+                for (let field of fields) {
+                    const input = document.getElementById(field);
+                    if (!input.value) {
+                        input.value = countryCode;
+
+                        const btn = document.createElement("button");
+                        btn.textContent = countryName + " ✕";
+                        btn.className = "btn btn-sm btn-danger";
+                        btn.style.margin = "5px";
+                        btn.onclick = function () {
+                            input.value = "";
+                            btn.remove();
+                            if (geojson) {
+                                geojson.eachLayer(l => {
+                                    if (l.feature.properties.ISO_A3 === countryCode) {
+                                        geojson.resetStyle(l);
+                                    }
+                                });
+                            }
+                            updateCountryStyles();
+                        };
+                        document.getElementById("selected-countries").appendChild(btn);
+                        updateCountryStyles();
+                        break;
+                    }
+                }
+            });
+    });
+    
+    function searchCountry() {
+        const query = document.getElementById('country_search').value;
+        if (!query) return;
+
+        fetch(`https://nominatim.openstreetmap.org/search?country=${encodeURIComponent(query)}&format=json&limit=1`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.length > 0) {
+                    const { lat, lon } = data[0];
+                    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`)
+                        .then(res => res.json())
+                        .then(reverseData => {
+                            const countryCode = reverseData.address.country_code.toUpperCase();
+                            const countryName = reverseData.address.country;
+                            if (countryCode) {
+                                const fields = ['country1','country2','country3','country4','country5','country6','country7','country8','country9','country10'];
+                                for (let field of fields) {
+                                    const input = document.getElementById(field);
+                                    if (!input.value) {
+                                        input.value = countryCode;
+
+                                        const btn = document.createElement("button");
+                                        btn.textContent = countryName + " ✕";
+                                        btn.className = "btn btn-sm btn-danger";
+                                        btn.style.margin = "5px";
+                                        btn.onclick = function () {
+                                            input.value = "";
+                                            btn.remove();
+                                            if (geojson) {
+                                                geojson.eachLayer(l => {
+                                                    if (l.feature.properties.ISO_A3 === countryCode) {
+                                                        geojson.resetStyle(l);
+                                                    }
+                                                });
+                                            }
+                                            updateCountryStyles();
+                                        };
+                                        document.getElementById("selected-countries").appendChild(btn);
+
+                                        if (geojson) {
+                                            geojson.eachLayer(l => {
+                                                if (l.feature.properties.ISO_A3 === countryCode) {
+                                                    highlightFeatureOnLayer(l);
+                                                }
+                                            });
+                                        }
+                                        updateCountryStyles();
+
+                                        break;
+                                    }
+                                }
+                            } else {
+                                alert("Could not find a valid country code.");
+                            }
+                        });
+                } else {
+                    alert("Country not found. Please try again.");
+                }
+            })
+            .catch(() => alert("Error occurred during search."));
+    }
+
+    document.getElementById('indicatorSearch').addEventListener('input', function () {
+        const filter = this.value.toLowerCase();
+        const labels = document.querySelectorAll('#indicatorList label');
+        labels.forEach(label => {
+            const text = label.textContent.toLowerCase();
+            label.style.display = text.includes(filter) ? '' : 'none';
+        });
+    });
+
+    function highlightFeature(e) {
+        const layer = e.target;
+        const code = layer.feature.properties.ISO_A3;
+        const fields = ['country1','country2','country3','country4','country5','country6','country7','country8','country9','country10'];
+        const selectedCodes = fields.map(f => document.getElementById(f).value).filter(v => v);
+        if (!selectedCodes.includes(code)) {
+            layer.setStyle({
+                weight: 2,
+                color: '#f0f',
+                fillOpacity: 0.3
+            });
+        }
+        layer.bringToFront();
+    }
+
+    function resetHighlight(e) {
+        if (geojson) {
+            const layer = e.target;
+            const code = layer.feature.properties.ISO_A3;
+            const fields = ['country1','country2','country3','country4','country5','country6','country7','country8','country9','country10'];
+            const selectedCodes = fields.map(f => document.getElementById(f).value).filter(v => v);
+            if (!selectedCodes.includes(code)) {
+                geojson.resetStyle(layer);
+            }
+        }
+    }
+    let geojson;
+    fetch("https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson")
+        .then(res => res.json())
+        .then(data => {
+            geojson = L.geoJson(data, {
+                style: {
+                    fillColor: '#444',
+                    weight: 1,
+                    color: '#888',
+                    fillOpacity: 0.01
+                },
+                onEachFeature: function (feature, layer) {
+                    layer.on({
+                        mouseover: highlightFeature,
+                        mouseout: resetHighlight
+                    });
+                }
+            }).addTo(map);
+
+            function updateCountryStyles() {
+                const fields = ['country1','country2','country3','country4','country5','country6','country7','country8','country9','country10'];
+                const selectedCodes = fields.map(f => document.getElementById(f).value).filter(v => v);
+
+                geojson.eachLayer(l => {
+                    const code = l.feature.properties.ISO_A3;
+                    if (selectedCodes.includes(code)) {
+                        highlightFeatureOnLayer(l);
+                    } else {
+                        geojson.resetStyle(l);
+                    }
+                });
+            }
+
+            window.updateCountryStyles = updateCountryStyles;
+        });
+
+    </script>
+{% endblock %}

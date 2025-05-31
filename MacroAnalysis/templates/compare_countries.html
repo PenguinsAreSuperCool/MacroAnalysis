@@ -1,0 +1,229 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Country Comparison
+{% endblock %}
+{% block main %}
+<div class="compare-countries-container">
+    <div class="text-center"></div>
+        <h1><a href="/">MacroAnalysis</a></h1>
+    </div>
+    <div class="graph-grid">
+        {% for indicator in indicators %}
+            <div id="resizable_{{ indicator }}" class="graph-resizable" draggable="true" ondragstart="dragStart(event)" ondragover="allowDrop(event)" ondrop="drop(event)">
+                <div id="graph_{{ indicator }}" class="graph-box"></div>
+            </div>
+        {% endfor %}
+    </div>
+    <div class="btn-container text-center" style="margin-top: 1.5em;">
+        <button id="toggle-layout" class="btn btn-secondary">Switch to Grid View</button>
+    </div>
+</div>
+
+<script src="https://cdn.plot.ly/plotly-3.0.1.min.js"></script>
+<script>
+    const countries = {{ countries | tojson }};
+    const dataSeries = {{ data_series | tojson }};
+    const years = {{ years | list }};
+    let traces;
+    const currentYear = new Date().getFullYear();
+
+    {% for indicator in indicators %}
+        traces = [];
+ 
+        const layout_{{ indicator }} = {
+            title: { 
+                text: '{{ indicator | replace("_", " ") | title }} Comparison', 
+                font: { color: 'white' } 
+            },
+            xaxis: { 
+                title: 'Year', 
+                color: 'white',
+                showgrid: false
+            },
+            yaxis: { 
+                title: 'Value', 
+                color: 'white',
+                showgrid: false
+            },
+            paper_bgcolor: 'black',
+            plot_bgcolor: 'black',
+            dragmode: false,  
+            scrollZoom: false,  
+            hovermode: 'closest',
+            staticPlot: true,  
+            margin: { t: 50, b: 50, l: 50, r: 50 },
+            autosize: true,
+            annotations: [],
+            legend: {
+                font: { color: 'white' }
+            }
+        };
+
+ 
+        countries.forEach(name => {
+            const data = dataSeries[name][{{ indicator | tojson }}];
+            const histX = [], histY = [];
+            const foreX = [], foreY = [];
+            
+            // Track if we have ranking data to display
+            window[`hasRanking_{{ indicator }}_${name.replace(/[^a-zA-Z0-9]/g, '_')}`] = false;
+            window[`latestRankingYear_{{ indicator }}_${name.replace(/[^a-zA-Z0-9]/g, '_')}`] = null;
+            window[`latestRanking_{{ indicator }}_${name.replace(/[^a-zA-Z0-9]/g, '_')}`] = null;
+ 
+            data.forEach(point => {
+                if (point.type === 'historical') {
+                    histX.push(point.year);
+                    histY.push(point.value);
+                    
+                    // Check if this point has ranking data
+                    if (point.ranking && Object.keys(point.ranking).length > 0) {
+                        window[`hasRanking_{{ indicator }}_${name.replace(/[^a-zA-Z0-9]/g, '_')}`] = true;
+                        // Keep track of the latest year with ranking data
+                        if (!window[`latestRankingYear_{{ indicator }}_${name.replace(/[^a-zA-Z0-9]/g, '_')}`] || point.year > window[`latestRankingYear_{{ indicator }}_${name.replace(/[^a-zA-Z0-9]/g, '_')}`]) {
+                            window[`latestRankingYear_{{ indicator }}_${name.replace(/[^a-zA-Z0-9]/g, '_')}`] = point.year;
+                            window[`latestRanking_{{ indicator }}_${name.replace(/[^a-zA-Z0-9]/g, '_')}`] = point.ranking;
+                        }
+                    }
+                } else if (point.type === 'forecast') {
+                    foreX.push(point.year);
+                    foreY.push(point.value);
+                }
+            });
+            
+            // Predefined color palette for consistent colors
+            const colors = [
+                '#1f77b4', // blue
+                '#ff7f0e', // orange
+                '#2ca02c', // green
+                '#d62728', // red
+                '#9467bd', // purple
+                '#8c564b', // brown
+                '#e377c2', // pink
+                '#7f7f7f', // gray
+                '#bcbd22', // yellow-green
+                '#17becf'  // cyan
+            ];
+            const color = colors[countries.indexOf(name) % colors.length];
+            
+            traces.push({
+                type: 'scatter',
+                mode: 'lines+markers',
+                x: histX,
+                y: histY,
+                name: function() {
+                    if (window[`hasRanking_{{ indicator }}_${name.replace(/[^a-zA-Z0-9]/g, '_')}`]) {
+                        const rank = window[`latestRanking_{{ indicator }}_${name.replace(/[^a-zA-Z0-9]/g, '_')}`].rank;
+                        const total = window[`latestRanking_{{ indicator }}_${name.replace(/[^a-zA-Z0-9]/g, '_')}`].total;
+                        const year = window[`latestRankingYear_{{ indicator }}_${name.replace(/[^a-zA-Z0-9]/g, '_')}`];
+                        return `${name} (Historical) - Rank: #${rank} of ${total} (${year})`;
+                    } else {
+                        return `${name} (Historical)`;
+                    }
+                }(),
+                line: { dash: 'solid', color: color },
+                marker: { color: color },
+                textfont: { color: 'white' }
+            });
+ 
+            if (foreX.length > 0) {
+                traces.push({
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    x: foreX,
+                    y: foreY,
+                    name: `${name} (Forecast)`,
+                    line: { dash: 'dash', color: color },
+                    marker: { color: color },
+                    textfont: { color: 'white' }
+                });
+            }
+        });
+ 
+        traces.forEach(trace => {
+            trace.opacity = 0;
+        });
+        
+        Plotly.newPlot('graph_{{ indicator }}', traces, layout_{{ indicator }}, {
+            scrollZoom: false,
+            displayModeBar: true,
+            staticPlot: false,
+            doubleClick: false,
+            displaylogo: false
+        });
+        
+        Plotly.animate('graph_{{ indicator }}', {
+            data: traces.map(trace => ({...trace, opacity: 1})),
+            traces: Array.from({length: traces.length}, (_, i) => i),
+            layout: {}
+        }, {
+            transition: { duration: 1000, easing: 'cubic-in-out' },
+            frame: { duration: 1000, redraw: true }
+        });
+    {% endfor %}
+
+    window.addEventListener("resize", () => {
+        {% for indicator in indicators %}
+        Plotly.Plots.resize(document.getElementById('graph_{{ indicator }}'));
+        {% endfor %}
+    });
+
+    function resetGraphSizes() {
+        document.querySelectorAll(".graph-resizable").forEach(el => {
+            el.style.width = "48%";
+            el.style.height = "400px";
+        });
+        {% for indicator in indicators %}
+        Plotly.Plots.resize(document.getElementById('graph_{{ indicator }}'));
+        {% endfor %}
+    }
+    const resizeObserver = new ResizeObserver(entries => {
+        for (let entry of entries) {
+            const graph = entry.target.querySelector('.graph-box');
+            if (graph) {
+                const newHeight = entry.contentRect.height;
+                const newWidth = entry.contentRect.width;
+                Plotly.relayout(graph, { height: newHeight, width: newWidth });
+            }
+        }
+    });
+    document.querySelectorAll('.graph-resizable').forEach(box => {
+        resizeObserver.observe(box);
+    });
+
+    function dragStart(e) {
+        e.dataTransfer.setData("text/plain", e.target.id);
+    }
+    function allowDrop(e) {
+        e.preventDefault();
+    }
+    function drop(e) {
+        e.preventDefault();
+        const draggedId = e.dataTransfer.getData("text/plain");
+        const draggedEl = document.getElementById(draggedId);
+        const dropTarget = e.currentTarget;
+        if (draggedEl && dropTarget && draggedEl !== dropTarget) {
+            const parent = dropTarget.parentNode;
+            parent.insertBefore(draggedEl, dropTarget);
+        }
+    }
+
+    document.getElementById('toggle-layout').addEventListener('click', function () {
+        const grid = document.querySelector('.graph-grid');
+        const resizables = document.querySelectorAll('.graph-resizable');
+        if (grid.style.flexDirection === 'column') {
+            grid.style.flexDirection = '';
+            resizables.forEach(el => {
+                el.style.width = '48%';
+            });
+            this.textContent = 'Switch to List View';
+        } else {
+            grid.style.flexDirection = 'column';
+            resizables.forEach(el => {
+                el.style.width = '100%';
+            });
+            this.textContent = 'Switch to Grid View';
+        }
+    });
+</script>
+{% endblock %}

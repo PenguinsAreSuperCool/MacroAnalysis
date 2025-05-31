@@ -1,0 +1,76 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Profile
+{% endblock %}
+
+{% block main %}
+<div class="profile-container">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">User Profile</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-4 text-center">
+                            <div class="profile-avatar">
+                                <i class="fas fa-user-circle fa-7x"></i>
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <h4 style="color: white;">{{ current_user.username }}</h4>
+                            <p><strong>Email:</strong> {{ current_user.email }}</p>
+                            <p><strong>Member since:</strong> {{ current_user.created_at.strftime('%B %d, %Y') }}</p>
+                            <p><strong>Last login:</strong> 
+                                {% if current_user.last_login %}
+                                    {{ current_user.last_login.strftime('%B %d, %Y at %H:%M') }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h5 style="color: white;">Recent Activity</h5>
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Activity</th>
+                                            <th>Date</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% if recent_activities %}
+                                            {% for activity in recent_activities %}
+                                                <tr>
+                                                    <td>{{ activity.activity_type }}</td>
+                                                    <td>{{ activity.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        {% else %}
+                                            <tr>
+                                                <td colspan="2" class="text-center">No recent activity</td>
+                                            </tr>
+                                        {% endif %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <!-- Activity history is now only available to admin users -->
+                            {% if current_user.username == 'admin' %}
+                            <div class="text-end">
+                                <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-primary">View Admin Dashboard</a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

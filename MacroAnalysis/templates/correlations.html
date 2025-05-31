@@ -1,0 +1,363 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Indicator Correlations
+{% endblock %}
+{% block main %}
+<div class="correlation-container">
+    <div class="text-center">
+        <h1><a href="/">MacroAnalysis</a></h1>
+        <h2>Economic Indicator Correlations</h2>
+        <p class="correlation-intro">Analyze how different economic indicators relate to each other for a specific country.</p>
+    </div>
+    
+    <div id="map" class="correlation-map"></div>
+    
+    <div class="correlation-form-container">
+        <form id="correlation_form" action="/correlations/analyze" method="post" class="text-center">
+            <div class="correlation-form-group">
+                <div class="mode-selector">
+                    <label class="mode-label">Mode:</label>
+                    <div class="mode-options">
+                        <label class="mode-option">
+                            <input type="radio" name="mode" id="single_mode" checked>
+                            <span>Single Country</span>
+                        </label>
+                        <label class="mode-option">
+                            <input type="radio" name="mode" id="compare_mode">
+                            <span>Two Countries</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="single_country_mode" class="correlation-form-group">
+                <label for="country_search">Country:</label>
+                <input type="text" id="country_search" name="country_search" placeholder="Type country name" class="dark-input">
+                <input type="hidden" id="country" name="country">
+            </div>
+            
+            <div id="two_countries_mode" class="correlation-form-group" style="display: none;">
+                <div class="country-inputs">
+                    <div>
+                        <label for="country1_search">First Country:</label>
+                        <input type="text" id="country1_search" name="country1_search" placeholder="Type country name" class="dark-input">
+                        <input type="hidden" id="country1" name="country1">
+                    </div>
+                    <div>
+                        <label for="country2_search">Second Country:</label>
+                        <input type="text" id="country2_search" name="country2_search" placeholder="Type country name" class="dark-input">
+                        <input type="hidden" id="country2" name="country2">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="correlation-form-row">
+                <div class="correlation-form-group">
+                    <label for="start_year">Start Year:</label>
+                    <input type="number" id="start_year" name="start_year" value="1960" min="1960" max="{{ current_year }}" class="dark-input" required>
+                </div>
+                
+                <div class="correlation-form-group">
+                    <label for="end_year">End Year:</label>
+                    <input type="number" id="end_year" name="end_year" value="{{ current_year }}" min="1960" max="{{ current_year }}" class="dark-input" required>
+                </div>
+            </div>
+            
+            <div class="correlation-form-row">
+                <div class="correlation-form-group">
+                    <label for="indicator1">First Indicator:</label>
+                    <select id="indicator1" name="indicator1" class="dark-input" required>
+                        <option value="" disabled selected>Select indicator</option>
+                        {% for indicator in valid_indicators | sort %}
+                            <option value="{{ indicator }}">{{ indicator.replace('_', ' ').title() }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="correlation-form-group">
+                    <label for="indicator2">Second Indicator:</label>
+                    <select id="indicator2" name="indicator2" class="dark-input" required>
+                        <option value="" disabled selected>Select indicator</option>
+                        {% for indicator in valid_indicators | sort %}
+                            <option value="{{ indicator }}">{{ indicator.replace('_', ' ').title() }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <div class="correlation-form-group">
+                <button type="submit" class="btn btn-primary">Analyze Correlation</button>
+            </div>
+        </form>
+    </div>
+    
+    <div class="correlation-info">
+        <h3>About Correlation Analysis</h3>
+        <p>Correlation analysis measures the statistical relationship between two variables. The correlation coefficient ranges from -1 to 1:</p>
+        <ul>
+            <li><strong>1</strong>: Perfect positive correlation (as one variable increases, the other increases proportionally)</li>
+            <li><strong>0</strong>: No correlation (variables are not related)</li>
+            <li><strong>-1</strong>: Perfect negative correlation (as one variable increases, the other decreases proportionally)</li>
+        </ul>
+        <p>This tool helps you understand relationships between economic indicators, such as:</p>
+        <ul>
+            <li>How GDP growth relates to unemployment rates</li>
+            <li>The relationship between inflation and interest rates</li>
+            <li>How Education Expenditure correlates with literacy rate</li>
+        </ul>
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    const map = L.map('map', {
+        minZoom: 2,  
+        maxZoom: 4,  
+        maxBoundsViscosity: 1.0,  
+        maxBounds: [[-60, -160], [85, 160]]
+    }).setView([30, 0], 3); 
+
+    let currentTheme = 'dark_all';
+    let tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+    
+    function highlightFeature(e) {
+        const layer = e.target;
+        layer.setStyle({
+            weight: 2,
+            color: '#f0f',
+            fillOpacity: 0.3
+        });
+        layer.bringToFront();
+    }
+
+    function resetHighlight(e) {
+        if (geojson) {
+            geojson.resetStyle(e.target);
+        }
+    }
+
+    function onEachFeature(feature, layer) {
+        layer.on({
+            mouseover: highlightFeature,
+            mouseout: resetHighlight
+        });
+    }
+
+    let geojson;
+    fetch("https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson")
+        .then(res => res.json())
+        .then(data => {
+            geojson = L.geoJson(data, {
+                style: {
+                    fillColor: '#444',
+                    weight: 1,
+                    color: '#888',
+                    fillOpacity: 0.01
+                },
+                onEachFeature: onEachFeature
+            }).addTo(map);
+        });
+
+    document.getElementById('single_mode').addEventListener('change', function() {
+        if (this.checked) {
+            document.getElementById('single_country_mode').style.display = 'block';
+            document.getElementById('two_countries_mode').style.display = 'none';
+            document.getElementById('correlation_form').action = '/correlations/analyze';
+            updateIndicatorRestrictions();
+        }
+    });
+    
+    document.getElementById('compare_mode').addEventListener('change', function() {
+        if (this.checked) {
+            document.getElementById('single_country_mode').style.display = 'none';
+            document.getElementById('two_countries_mode').style.display = 'block';
+            document.getElementById('correlation_form').action = '/correlations/analyze_two_countries';
+            updateIndicatorRestrictions();
+        }
+    });
+    
+    function setupCountrySearch(searchInputId, hiddenInputId) {
+        const searchInput = document.getElementById(searchInputId);
+        const hiddenInput = document.getElementById(hiddenInputId);
+        
+        searchInput.addEventListener('input', function() {
+            clearTimeout(this.debounceTimer);
+            this.debounceTimer = setTimeout(() => {
+                const query = this.value;
+                if (query.length < 2) return;
+                
+                fetch(`https://nominatim.openstreetmap.org/search?country=${encodeURIComponent(query)}&format=json&limit=1`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.length > 0) {
+                            const { lat, lon } = data[0];
+                            fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`)
+                                .then(res => res.json())
+                                .then(reverseData => {
+                                    const countryCode = reverseData.address.country_code.toUpperCase();
+                                    if (countryCode) {
+                                        hiddenInput.value = countryCode;
+                                    }
+                                });
+                        }
+                    })
+                    .catch(error => console.error('Error searching for country:', error));
+            }, 500);
+        });
+    }
+    
+    setupCountrySearch('country_search', 'country');
+    setupCountrySearch('country1_search', 'country1');
+    setupCountrySearch('country2_search', 'country2');
+    
+    document.getElementById('correlation_form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const compareMode = document.getElementById('compare_mode').checked;
+        const form = this;
+        
+        if (compareMode) {
+            const country1 = document.getElementById('country1').value;
+            const country2 = document.getElementById('country2').value;
+            const indicator1 = document.getElementById('indicator1').value;
+            const indicator2 = document.getElementById('indicator2').value;
+            
+            if (!country1 || !country2 || !indicator1 || !indicator2) {
+                alert('Please select both countries and indicators');
+                return;
+            }
+            
+            form.action = '/correlations/analyze_two_countries';
+            form.method = 'post';
+            form.submit();
+        } else {
+            const countryValue = document.getElementById('country').value;
+            const indicator1Value = document.getElementById('indicator1').value;
+            const indicator2Value = document.getElementById('indicator2').value;
+            
+            if (!countryValue) {
+                alert('Please select a valid country from the search');
+                return;
+            }
+            
+            if (!indicator1Value || !indicator2Value) {
+                alert('Please select both indicators');
+                return;
+            }
+            
+            if (indicator1Value === indicator2Value) {
+                alert('Please select different indicators in single country mode');
+                return;
+            }
+            
+            form.action = '/correlations/analyze';
+            form.method = 'post';
+            form.submit();
+        }
+    });
+
+    map.on('click', function(e) {
+        const { lat, lng } = e.latlng;
+        const compareMode = document.getElementById('compare_mode').checked;
+
+        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+            .then(res => res.json())
+            .then(data => {
+                if (!data.address || !data.address.country_code) {
+                    console.error('No country found at this location');
+                    return;
+                }
+                
+                const countryCode = data.address.country_code.toUpperCase();
+                const countryName = data.address.country;
+                
+                if (compareMode) {
+                    if (!document.getElementById('country1_search').value) {
+                        document.getElementById('country1').value = countryCode;
+                        document.getElementById('country1_search').value = countryName;
+                    } else if (!document.getElementById('country2_search').value) {
+                        document.getElementById('country2').value = countryCode;
+                        document.getElementById('country2_search').value = countryName;
+                    } else {
+                        document.getElementById('country1').value = countryCode;
+                        document.getElementById('country1_search').value = countryName;
+                    }
+                } else {
+                    document.getElementById('country').value = countryCode;
+                    document.getElementById('country').value = countryCode;
+                    document.getElementById('country_search').value = countryName;
+                }
+            })
+            .catch(error => console.error('Error getting country data:', error));
+    });
+
+    document.getElementById('indicator1').addEventListener('change', function() {
+        if (!document.getElementById('compare_mode').checked) {
+            const indicator2 = document.getElementById('indicator2');
+            const options = indicator2.querySelectorAll('option');
+            
+            options.forEach(option => {
+                if (option.value === this.value) {
+                    option.disabled = true;
+                } else if (option.value) {
+                    option.disabled = false;
+                }
+            });
+        }
+    });
+    
+    document.getElementById('indicator2').addEventListener('change', function() {
+        if (!document.getElementById('compare_mode').checked) {
+            const indicator1 = document.getElementById('indicator1');
+            const options = indicator1.querySelectorAll('option');
+            
+            options.forEach(option => {
+                if (option.value === this.value) {
+                    option.disabled = true;
+                } else if (option.value) {
+                    option.disabled = false;
+                }
+            });
+        }
+    });
+    
+    function updateIndicatorRestrictions() {
+        const compareMode = document.getElementById('compare_mode').checked;
+        const indicator1 = document.getElementById('indicator1');
+        const indicator2 = document.getElementById('indicator2');
+        const options1 = indicator1.querySelectorAll('option');
+        const options2 = indicator2.querySelectorAll('option');
+        
+        if (compareMode) {
+            options1.forEach(option => {
+                option.disabled = false;
+            });
+            
+            options2.forEach(option => {
+                option.disabled = false;
+            });
+        } else {
+            const indicator1Value = indicator1.value;
+            const indicator2Value = indicator2.value;
+            
+            options1.forEach(option => {
+                if (option.value === indicator2Value) {
+                    option.disabled = true;
+                } else if (option.value) {
+                    option.disabled = false;
+                }
+            });
+            
+            options2.forEach(option => {
+                if (option.value === indicator1Value) {
+                    option.disabled = true;
+                } else if (option.value) {
+                    option.disabled = false;
+                }
+            });
+        }
+    }
+</script>
+{% endblock %}

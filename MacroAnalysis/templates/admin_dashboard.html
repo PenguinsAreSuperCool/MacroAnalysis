@@ -1,0 +1,214 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Admin Dashboard
+{% endblock %}
+
+{% block main %}
+<div class="admin-dashboard">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">Admin Dashboard</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="stat-card">
+                                <h4>Total Users</h4>
+                                <div class="stat-value">{{ stats.total_users }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card">
+                                <h4>Total Activities</h4>
+                                <div class="stat-value">{{ stats.total_activities }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card">
+                                <h4>New Users (30d)</h4>
+                                <div class="stat-value">{{ stats.new_users_30d }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card">
+                                <h4>Active Users (7d)</h4>
+                                <div class="stat-value">{{ stats.active_users_7d }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">User Activity Logs</h4>
+                    <form class="d-flex" method="GET" action="{{ url_for('admin_dashboard') }}">
+                        <select name="activity_type" class="form-select me-2">
+                            <option value="">All Activities</option>
+                            <option value="view_country" {% if request.args.get('activity_type') == 'view_country' %}selected{% endif %}>View Country</option>
+                            <option value="view_ranking" {% if request.args.get('activity_type') == 'view_ranking' %}selected{% endif %}>View Ranking</option>
+                            <option value="view_correlation" {% if request.args.get('activity_type') == 'view_correlation' %}selected{% endif %}>View Correlation</option>
+                            <option value="compare_countries" {% if request.args.get('activity_type') == 'compare_countries' %}selected{% endif %}>Compare Countries</option>
+                        </select>
+                        <button type="submit" class="btn btn-light">Filter</button>
+                    </form>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Activity Type</th>
+                                    <th>Details</th>
+                                    <th>Date & Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if activities %}
+                                    {% for activity in activities %}
+                                        <tr>
+                                            <td>{{ User.query.get(activity.user_id).username }}</td>
+                                            <td>{{ activity.activity_type }}</td>
+                                            <td>{{ activity.details }}</td>
+                                            <td>{{ activity.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="4" class="text-center">No activity records found</td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    {% if pagination %}
+                    <nav aria-label="Activity pagination">
+                        <ul class="pagination justify-content-center">
+                            {% if pagination.has_prev %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('admin_dashboard', page=pagination.prev_num, activity_type=request.args.get('activity_type', '')) }}">Previous</a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
+                                </li>
+                            {% endif %}
+                            
+                            {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                                {% if page_num %}
+                                    {% if page_num == pagination.page %}
+                                        <li class="page-item active" aria-current="page">
+                                            <span class="page-link">{{ page_num }}</span>
+                                        </li>
+                                    {% else %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ url_for('admin_dashboard', page=page_num, activity_type=request.args.get('activity_type', '')) }}">{{ page_num }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <a class="page-link" href="#">...</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if pagination.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('admin_dashboard', page=pagination.next_num, activity_type=request.args.get('activity_type', '')) }}">Next</a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Next</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Most Active Users</h4>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Username</th>
+                                    <th>Activity Count</th>
+                                    <th>Last Active</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if active_users %}
+                                    {% for user in active_users %}
+                                        <tr>
+                                            <td>{{ user.username }}</td>
+                                            <td>{{ user.activity_count }}</td>
+                                            <td>{{ user.last_active.strftime('%Y-%m-%d %H:%M') if user.last_active else 'N/A' }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="3" class="text-center">No active users found</td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Popular Features</h4>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Feature</th>
+                                    <th>Usage Count</th>
+                                    <th>Percentage</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if popular_features %}
+                                    {% for feature in popular_features %}
+                                        <tr>
+                                            <td>{{ feature.name }}</td>
+                                            <td>{{ feature.count }}</td>
+                                            <td>{{ feature.percentage }}%</td>
+                                        </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="3" class="text-center">No feature usage data found</td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

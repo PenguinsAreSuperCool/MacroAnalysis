@@ -1,0 +1,184 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Correlation Analysis
+{% endblock %}
+{% block main %}
+<div class="correlation-results-container">
+    <div class="text-center">
+        <h1><a href="/">MacroAnalysis</a></h1>
+        <h2>Correlation Analysis: {{ country }}</h2>
+    </div>
+    
+    <div class="correlation-summary">
+        <h3>{{ indicator1.replace('_', ' ').title() }} vs. {{ indicator2.replace('_', ' ').title() }}</h3>
+        
+        {% if correlation is not none %}
+            <div class="correlation-coefficient">
+                <p>Correlation Coefficient: <span class="correlation-value">{{ correlation|round(3) }}</span></p>
+                
+                <div class="correlation-scale">
+                    <div class="scale-label">-1</div>
+                    <div class="scale-bar">
+                        <div class="scale-indicator" style="left: {{ ((correlation + 1) / 2 * 100)|round }}%;"></div>
+                    </div>
+                    <div class="scale-label">+1</div>
+                </div>
+                
+                <p class="correlation-interpretation">
+                    {% if correlation > 0.7 %}
+                        <strong>Strong positive correlation:</strong> As {{ indicator1.replace('_', ' ').title() }} increases, {{ indicator2.replace('_', ' ').title() }} tends to increase significantly.
+                    {% elif correlation > 0.3 %}
+                        <strong>Moderate positive correlation:</strong> As {{ indicator1.replace('_', ' ').title() }} increases, {{ indicator2.replace('_', ' ').title() }} tends to increase moderately.
+                    {% elif correlation > -0.3 %}
+                        <strong>Weak or no correlation:</strong> There is little to no consistent relationship between {{ indicator1.replace('_', ' ').title() }} and {{ indicator2.replace('_', ' ').title() }}.
+                    {% elif correlation > -0.7 %}
+                        <strong>Moderate negative correlation:</strong> As {{ indicator1.replace('_', ' ').title() }} increases, {{ indicator2.replace('_', ' ').title() }} tends to decrease moderately.
+                    {% else %}
+                        <strong>Strong negative correlation:</strong> As {{ indicator1.replace('_', ' ').title() }} increases, {{ indicator2.replace('_', ' ').title() }} tends to decrease significantly.
+                    {% endif %}
+                </p>
+            </div>
+        {% else %}
+            <p class="correlation-error">Unable to calculate correlation. This may be due to insufficient data points or missing values.</p>
+        {% endif %}
+    </div>
+    
+    <div class="correlation-charts">
+        <div id="scatter_plot" class="correlation-chart"></div>
+        <div id="time_series" class="correlation-chart"></div>
+    </div>
+</div>
+
+<script src="https://cdn.plot.ly/plotly-3.0.1.min.js"></script>
+<script>
+    const scatterData = {{ scatter_data | tojson }};
+    const years = {{ years | tojson }};
+    const indicator1 = {{ indicator1 | tojson }};
+    const indicator2 = {{ indicator2 | tojson }};
+    
+    const xValues = scatterData.map(point => point.x);
+    const yValues = scatterData.map(point => point.y);
+    const yearLabels = scatterData.map(point => point.year);
+    
+    const scatterLayout = {
+        title: { 
+            text: '{{ indicator1.replace("_", " ").title() }} vs {{ indicator2.replace("_", " ").title() }}', 
+            font: { color: 'white' } 
+        },
+        xaxis: { 
+            title: '{{ indicator1.replace("_", " ").title() }}', 
+            color: 'white',
+            showgrid: false
+        },
+        yaxis: { 
+            title: '{{ indicator2.replace("_", " ").title() }}', 
+            color: 'white',
+            showgrid: false
+        },
+        paper_bgcolor: 'black',
+        plot_bgcolor: 'black',
+        hovermode: 'closest',
+        margin: { t: 50, b: 50, l: 50, r: 50 }
+    };
+    
+    // Create scatter plot with animation
+    const scatterTrace = {
+        type: 'scatter',
+        mode: 'markers+text',
+        x: xValues,
+        y: yValues,
+        text: yearLabels,
+        textposition: 'top center',
+        marker: {
+            size: 10,
+            color: '#1f77b4',
+            opacity: 0
+        },
+        name: 'Data Points',
+        opacity: 0
+    };
+    
+    Plotly.newPlot('scatter_plot', [scatterTrace], scatterLayout);
+    
+    Plotly.animate('scatter_plot', {
+        data: [{...scatterTrace, opacity: 1, marker: {...scatterTrace.marker, opacity: 0.7}}],
+        traces: [0],
+        layout: {}
+    }, {
+        transition: { duration: 1000, easing: 'cubic-in-out' },
+        frame: { duration: 1000, redraw: true }
+    });
+    
+    const timeSeriesLayout = {
+        title: { 
+            text: 'Time Series Comparison', 
+            font: { color: 'white' } 
+        },
+        xaxis: { 
+            title: 'Year', 
+            color: 'white',
+            showgrid: false
+        },
+        yaxis: { 
+            title: 'Value', 
+            color: 'white',
+            showgrid: false
+        },
+        yaxis2: {
+            title: '{{ indicator2.replace("_", " ").title() }}',
+            titlefont: { color: '#ff7f0e' },
+            tickfont: { color: '#ff7f0e' },
+            overlaying: 'y',
+            side: 'right',
+            showgrid: false,
+            color: 'white'
+        },
+        paper_bgcolor: 'black',
+        plot_bgcolor: 'black',
+        hovermode: 'closest',
+        margin: { t: 50, b: 50, l: 50, r: 50 },
+        legend: { font: { color: 'white' } }
+    };
+    
+    const sortedData = [...scatterData].sort((a, b) => a.year - b.year);
+    
+    const timeSeriesTraces = [
+        {
+            type: 'scatter',
+            mode: 'lines+markers',
+            x: sortedData.map(point => point.year),
+            y: sortedData.map(point => point.x),
+            name: '{{ indicator1.replace("_", " ").title() }}',
+            line: { color: '#1f77b4' },
+            opacity: 0
+        },
+        {
+            type: 'scatter',
+            mode: 'lines+markers',
+            x: sortedData.map(point => point.year),
+            y: sortedData.map(point => point.y),
+            name: '{{ indicator2.replace("_", " ").title() }}',
+            yaxis: 'y2',
+            line: { color: '#ff7f0e' },
+            opacity: 0
+        }
+    ];
+    
+    Plotly.newPlot('time_series', timeSeriesTraces, timeSeriesLayout);
+    
+    Plotly.animate('time_series', {
+        data: timeSeriesTraces.map(trace => ({...trace, opacity: 1})),
+        traces: [0, 1],
+        layout: {}
+    }, {
+        transition: { duration: 1000, easing: 'cubic-in-out' },
+        frame: { duration: 1000, redraw: true }
+    });
+    
+    window.addEventListener('resize', function() {
+        Plotly.Plots.resize('scatter_plot');
+        Plotly.Plots.resize('time_series');
+    });
+</script>
+{% endblock %}

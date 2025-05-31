@@ -1,0 +1,64 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Global Rankings
+{% endblock %}
+
+{% block main %}
+<div class="rankings-container">
+    <div class="text-center">
+        <h1><a href="/">MacroAnalysis</a></h1>
+        <h2>Global Economic Rankings</h2>
+        <p class="rankings-intro">Explore how countries rank globally across different economic indicators.</p>
+    </div>
+    {% if error_message %}
+        <div class="text-center">
+            <p>{{ error_message }}</p>
+        </div>
+    {% endif %}
+    <div class="rankings-form-container">
+        <form id="rankings_form" action="/rankings/view" method="post" class="text-center">
+            <div class="rankings-form-row">
+                <div class="rankings-form-group">
+                    <label for="indicator">Economic Indicator:</label>
+                    <select id="indicator" name="indicator" class="dark-input" required>
+                        <option value="" disabled selected>Select indicator</option>
+                        {% for indicator in valid_indicators | sort %}
+                            <option value="{{ indicator }}">{{ indicator.replace('_', ' ').title() }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="rankings-form-group">
+                    <label for="year">Year:</label>
+                    <input type="number" id="year" name="year" value="{{ current_year }}" min="1960" max="{{ current_year }}" class="dark-input" required>
+                </div>
+            </div>
+            
+            <div class="rankings-form-group">
+                <button type="submit" class="btn btn-primary">View Rankings</button>
+            </div>
+        </form>
+    </div>
+    
+    <div class="rankings-info">
+        <h3>About Global Rankings</h3>
+        <p>This tool allows you to see how countries compare globally on various economic indicators:</p>
+        <ul>
+            <li>GDP and GDP per capita</li>
+            <li>Unemployment and inflation rates</li>
+            <li>Foreign direct investment</li>
+            <li>And many more indicators</li>
+        </ul>
+        <p>Rankings are calculated based on the most recent available data from the World Bank and IMF.</p>
+    </div>
+    
+    <div class="btn-container text-center" style="margin-top: 1.5em;">
+        <a href="/rankings" class="btn btn-primary">Ranking</a>
+        <a href="/correlations" class="btn btn-primary">Correlations</a>
+        <a href="/compare" class="btn btn-primary">Compare Countries</a>
+        <a href="/map" class="btn btn-primary">Map</a>
+        <a href="/" class="btn btn-primary">Home</a>
+    </div>
+</div>
+{% endblock %}
